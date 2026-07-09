@@ -107,10 +107,15 @@ export const clients = pgTable(
       .default("standard"),
     assignedStaffId: text("assigned_staff_id").references(() => staff.id, {
       onDelete: "set null",
+      onUpdate: "cascade",
     }),
     bio: text("bio").notNull().default(""),
-    // Bio embedding for semantic similarity (generated via Inngest on bio change).
-    embedding: vector("embedding", { dimensions: 1536 }),
+    /** Cached AI intake summary shown in the profile header (staff-facing). */
+    intakeSummary: text("intake_summary"),
+    // Bio embedding for semantic similarity (generated via Inngest on bio
+    // change). 1024 dims = Voyage AI voyage-3.5 (Anthropic has no
+    // embeddings endpoint; Voyage is its recommended partner).
+    embedding: vector("embedding", { dimensions: 1024 }),
     consentToIntroduce: boolean("consent_to_introduce").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -120,6 +125,7 @@ export const clients = pgTable(
       .defaultNow(),
     updatedByStaffId: text("updated_by_staff_id").references(() => staff.id, {
       onDelete: "set null",
+      onUpdate: "cascade",
     }),
   },
   (t) => [
@@ -218,7 +224,7 @@ export const clientNotes = pgTable(
       .references(() => clients.id, { onDelete: "cascade" }),
     staffId: text("staff_id")
       .notNull()
-      .references(() => staff.id),
+      .references(() => staff.id, { onUpdate: "cascade" }),
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -274,7 +280,7 @@ export const introductions = pgTable(
       .references(() => clients.id, { onDelete: "cascade" }),
     initiatedByStaffId: text("initiated_by_staff_id")
       .notNull()
-      .references(() => staff.id),
+      .references(() => staff.id, { onUpdate: "cascade" }),
     status: introStatusEnum("status").notNull().default("suggested"),
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -308,7 +314,7 @@ export const introStatusHistory = pgTable(
     toStatus: introStatusEnum("to_status").notNull(),
     changedByStaffId: text("changed_by_staff_id")
       .notNull()
-      .references(() => staff.id),
+      .references(() => staff.id, { onUpdate: "cascade" }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

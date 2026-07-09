@@ -1,78 +1,96 @@
 # DateMatch — Matchmaking Agency Console
 
-**Staff-facing internal tool** for a professional matchmaking agency. Matchmakers manage a roster of clients (the daters are *records*, not users), get AI-ranked compatibility shortlists, and run introductions through a tracked pipeline whose feedback feeds back into scoring.
-
-There is no swiping and no client-to-client chat. Clients can **self-register through the portal** (`/sign-up` → `/portal`) and fill in their own profile, which lands in the staff roster as a `lead`; matchmakers curate everything from there. All matchmaking screens are staff-only.
+**Staff-facing internal tool** for a professional matchmaking agency, plus a lightweight **client portal**. Matchmakers manage a roster of clients, get AI-ranked compatibility shortlists with human-style rationales, and run introductions through a tracked pipeline whose feedback loops back into matching. Clients can self-register and complete their own intake; everything else is curated by staff — no swiping, no client-to-client chat.
 
 ## Stack
 
-Next.js 15 (App Router, RSC, Server Actions) · TypeScript strict · Tailwind v4 + shadcn/ui · Clerk (staff auth + roles) · Neon PostgreSQL + Drizzle + pgvector · Inngest · Resend · PostHog · Anthropic (`claude-sonnet-4-6`).
+Next.js 15 (App Router, RSC, Server Actions) · TypeScript strict · Tailwind v4 · Clerk (auth for staff + portal clients) · Neon PostgreSQL + Drizzle + pgvector · Inngest (recompute, embeddings, reminders) · Resend (notifications + intro emails) · PostHog (internal analytics) · Anthropic `claude-sonnet-4-6` (rationales + intake summaries) · Voyage AI (bio embeddings) · Vercel.
 
 ## Setup
 
 ```bash
 pnpm install
-cp .env.example .env        # fill in keys (see .env.example comments)
+cp .env.example .env        # fill in keys — every integration degrades gracefully if unset
 pnpm db:migrate             # applies drizzle/ migrations (enables pgvector)
-pnpm db:seed                # labelled test personas; refuses non-empty DB without --force
+pnpm db:seed                # labelled test personas; refuses a non-empty DB without --force
 pnpm dev
 ```
 
 Checks: `pnpm typecheck` · `pnpm test` · `pnpm build`
 
-## Roles (Clerk)
+**First admin:** set `ADMIN_BOOTSTRAP_EMAILS` to your email, sign in at `/sign-in` — you become an `admin` on first visit to the console. Add further staff in `/settings` (they get access when they first sign in with that email).
+
+## Roles
 
 | Role | Access |
 |---|---|
-| `admin` | Everything: staff management, all clients, settings |
-| `matchmaker` | Their assigned clients, create/advance introductions, view suggestions |
-| `readonly` | View only (e.g. assistants) |
+| `admin` | Everything: staff management, all clients, GDPR delete, settings |
+| `matchmaker` | Their assigned (or unassigned) clients, create/advance intros, suggestions |
+| `readonly` | View only |
 
-Staff rows live in the `staff` table keyed by Clerk user id.
+Portal clients are Clerk users too, linked by `clients.clerk_user_id`; they only ever see `/portal`.
 
-## Client portal (self-registration)
+## Screens
 
-Prospective clients register with Clerk (`/sign-up`) and complete their profile at `/portal/profile`: basic details → match preferences → compatibility questionnaire → consent. Self-registered records are linked via `clients.clerk_user_id`, created with status `lead` (staff activate after review), age-gated at 18+, and never enter anyone's shortlist until `consentToIntroduce` is ticked. The portal exposes the two most common hard/soft requirements as plain-language toggles (no smokers → dealbreaker; must want children → must-have); matchmakers refine anything richer on the staff side. Sections after "basic details" stay locked until the client record exists, so the flow is resumable at any point.
+- `/dashboard` — my clients, intros needing action, stale intros, this week's feedback
+- `/clients` — searchable roster (status, city, matchmaker, mine-only)
+- `/clients/[id]` — profile: AI intake summary, preferences, questionnaire, private photos, notes timeline, **suggested matches** (tier badge + rationale + propose button), intro history, management, GDPR delete (admin)
+- `/clients/new`, `/clients/[id]/edit` — staff intake, resumable per section
+- `/introductions` — Kanban pipeline, drag to advance; ambiguous moves live on the intro page
+- `/introductions/[id]` — side-by-side profiles, one-click transitions, scheduling, per-side feedback
+- `/feedback` — stream with negative sentiment pinned for follow-up
+- `/settings` — staff & roles (admin), scoring configuration, account
+- `/portal` + `/portal/profile` — client self-registration and resumable intake (basics → preferences → questionnaire → consent)
 
 ## How scoring works
 
-`computePairScore(a, b, opts)` in `src/lib/matching/score.ts` returns `{ score: 0–100, breakdown }`. It is a pure function — the Inngest recompute pipeline pre-filters candidates in SQL (status/consent/gender/age/geo + exclusions), computes pgvector cosine similarity in the same query, and calls the engine per pair. Every hard filter is re-checked in the engine, so the SQL pre-filter is only an optimization, never the source of truth.
+`computePairScore(a, b, opts)` in `src/lib/matching/score.ts` returns `{ score: 0–100, breakdown }`. It's a pure function: the recompute path (`src/lib/matching/candidates.ts`) pre-filters candidates in SQL (status/consent/mutual gender interest) and computes the pgvector cosine in the same query, but every hard filter is re-checked in the engine — SQL is an optimization, never the source of truth.
 
-**Hard filters (any hit → score 0):** pair in `match_exclusions` · either status ≠ `active` · either `consentToIntroduce` false · gender-interest mismatch in either direction · either outside the other's age range · distance beyond either side's `maxDistanceKm` · any dealbreaker hit (a dealbreaker only fires on an *answered* question).
+**Hard filters (any hit → score 0):** pair in `match_exclusions` · either status ≠ `active` · either without `consentToIntroduce` · gender-interest mismatch either way · either outside the other's age range · distance beyond either's `maxDistanceKm` · any dealbreaker hit (dealbreakers only fire on *answered* questions).
 
-**Weighted components (0–100):**
+**Weighted components:**
 
 | Component | Weight | How |
 |---|---|---|
-| Intake compatibility | 40% | Per-question rules in `src/lib/matching/questions.ts`: `similarity` (likert closeness), `complementarity` (likert distance), `exact` (equality), `overlap` (Jaccard of multi-selects). Question weights are relative and renormalized over the questions both clients answered. |
-| Semantic bio similarity | 25% | pgvector cosine of bio embeddings, rescaled from the typical embedding band (0.15–0.85) to 0–1. Embeddings are generated by an Inngest job on bio change. |
-| Must-haves satisfaction | 20% | Two-way: fraction of A's must-haves B satisfies, averaged with the reverse. A side with no must-haves counts as fully satisfied. |
-| Proximity | 15% | Flat 1.0 in-city / under 15 km, then exponential decay (~50 km constant). |
+| Intake compatibility | 40% | Per-question rules in `questions.ts`: `similarity` / `complementarity` (likert), `exact`, `overlap` (Jaccard). Weights renormalize over mutually-answered questions. |
+| Semantic bio similarity | 25% | Voyage `voyage-3.5` embeddings (1024-dim), pgvector cosine rescaled from the typical 0.15–0.85 band. |
+| Must-haves satisfaction | 20% | Two-way: fraction of A's must-haves B satisfies, averaged with the reverse. |
+| Proximity | 15% | Flat 1.0 in-city / under 15 km, exponential decay beyond (~50 km constant). |
 
-If a component can't be computed (missing embedding, missing coordinates), it is dropped and the remaining weights are **renormalized**, so incomplete data lowers confidence, not the ceiling. The full per-component (and per-question) breakdown is stored in `match_scores.breakdown`; pairs are stored once, canonically ordered (`clientAId < clientBId`).
+Missing data (no embedding yet, no coordinates) **drops the component and renormalizes** the rest — incomplete data lowers confidence, not the ceiling. Full per-component breakdown is stored on `match_scores.breakdown`; pairs are canonical (`clientAId < clientBId`).
+
+**Human-matchmaker touches:** scores are presented as tiers (Strong ≥75 / Promising ≥55 / Stretch) rather than decimals; the shortlist always includes one **wildcard** (high bio resonance outside the top ranks — stated preferences aren't revealed preferences); a heavily-weighted `timeline` ("readiness to settle down") question captures life-stage fit; and the AI rationale is prompted to end with the risk flag a human matchmaker would raise ("Watch: …"). Rationales are cached on the score row and invalidated on every recompute; they never invent facts beyond the two profiles and the breakdown.
 
 ## How the intro pipeline works
 
 `suggested → proposed → accepted_a/accepted_b → both_accepted → date_scheduled → met → success | declined | no_match`
 
-Staff propose an introduction from a suggested match, record each client's response, optionally send branded intro emails on mutual acceptance (Resend), schedule the date, then collect per-client feedback (rating, sentiment, second-date interest). Both positive → `success`; either negative → `declined` **plus an automatic `match_exclusions` row** so the pair is never re-suggested. Every transition is written to `intro_status_history` with the acting staff member.
+Transitions are validated against a state machine (`src/lib/staff/intros.ts`) and every one is logged to `intro_status_history` with the acting staff member. On mutual acceptance, agency-branded intro emails go to both clients (Resend) and involved matchmakers are notified. After the date, staff log feedback from each side (rating, sentiment, second-date interest). **Outcomes are automatic once both sides are in:** both positive → `success`; any negative → `declined` plus a permanent `match_exclusions` row (and the stored score is removed). Mixed/neutral stays at `met` for human judgement.
+
+## Background jobs (Inngest)
+
+- `client-changed-recompute` — debounced per client; re-embeds the bio if it changed, recomputes pair scores, pre-generates rationales for the top 3 pairs. The same work also runs inline in server actions, so the console works without an Inngest runner; the job is the retry/batch layer.
+- `client-deleted-cleanup` — post-GDPR-delete sweep + hook for external erasure.
+- `stale-proposed-reminder` (daily 08:00 UTC) — intros in `proposed` > 5 days → nudge the initiating matchmaker.
+- `missing-feedback-reminder` (daily 09:00 UTC) — `met` > 7 days with missing feedback → nudge to collect it.
+
+Local dev: `npx inngest-cli dev` and point it at `/api/inngest`.
+
+## Analytics (PostHog, server-side)
+
+`client_created`, `intake_completed`, `suggestions_viewed`, `intro_proposed`, `intro_accepted`, `date_scheduled`, `intro_success`, `feedback_logged` — captured from server actions (`src/lib/analytics.ts`), keyed by staff id (or Clerk id for portal events), so throughput and funnel success per matchmaker fall out directly.
 
 ## Privacy
 
-Client PII (photos, contact info) is staff-only; there are no public routes. Every edit is attributable (`updated_by_staff_id`, notes timeline). Clients with `consentToIntroduce = false` never appear in any shortlist (enforced in both the SQL pre-filter and the engine). Age-gated intake (18+). GDPR hard-delete cascades through scores/intros/feedback via FK `ON DELETE CASCADE` plus an Inngest cleanup job.
+Client PII (photos, contact details) is staff-only; the portal shows a client only their own record; there are no public data routes. Every edit is attributable (`updated_by_staff_id` + notes timeline + intro history). Clients without consent never enter any shortlist (enforced in SQL *and* the engine). 18+ age gate on both intake paths. GDPR hard-delete (admin, name-confirmation required) cascades through everything via FKs, then an Inngest job sweeps and hooks external systems.
 
-## Build progress
+## Seed data
 
-1. ✅ Schema + migrations + seed (`src/db/schema.ts`, `drizzle/`, `scripts/seed.ts`)
-2. ✅ Scoring engine + tests (`src/lib/matching/`)
-3. ✅ Client self-registration portal (Clerk auth, resumable profile/intake forms)
-4. ⏳ Staff auth + roles (staff console gating)
-5. ⏳ Client roster / profile / intake screens (staff side)
-6. ⏳ Suggested-matches panel + AI rationale
-7. ⏳ Introduction pipeline UI + feedback loop
-8. ⏳ Inngest jobs + Resend notifications
-9. ⏳ PostHog analytics + polish
+`pnpm db:seed` loads 10 labelled personas (`[SEED]`, `@seed.example.test`) across Slovenian cities with deliberate edge cases (no-consent lead, paused client, dealbreaker collisions), 3 sample intros across the pipeline (including a completed negative-feedback loop with its auto-exclusion), and pair scores computed by the real engine — no fabricated numbers. Destructive: refuses a non-empty database unless run with `--force`.
 
-## Deploy
+## Deploy (Vercel)
 
-Vercel: set all env vars from `.env.example`, run migrations against Neon (`pnpm db:migrate`), point Inngest and Clerk webhooks at the deployed URL.
+1. Set every var from `.env.example` (all optional integrations no-op gracefully when unset).
+2. `pnpm db:migrate` against Neon.
+3. Point the Inngest app at `https://<app>/api/inngest`.
+4. Sign in with a bootstrap admin email, add your staff in `/settings`.

@@ -24,7 +24,10 @@ export default function Home() {
           </Link>
         </div>
         <p className="mt-8 text-xs text-muted-foreground">
-          Staff console coming in the next build step.
+          Agency staff:{" "}
+          <Link href="/dashboard" className="underline">
+            open the console
+          </Link>
         </p>
       </div>
     </main>

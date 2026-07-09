@@ -1,9 +1,16 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Everything under /portal requires a signed-in Clerk user (self-service
-// clients). Staff screens will get their own matcher + role check when
-// they land; there are no other authenticated routes yet.
-const isProtectedRoute = createRouteMatcher(["/portal(.*)"]);
+// /portal = self-service clients; the rest = staff console. Both need a
+// signed-in Clerk user; staff role checks happen in the (staff) layout
+// and in every server action (middleware has no DB access).
+const isProtectedRoute = createRouteMatcher([
+  "/portal(.*)",
+  "/dashboard(.*)",
+  "/clients(.*)",
+  "/introductions(.*)",
+  "/feedback(.*)",
+  "/settings(.*)",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {

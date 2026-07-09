@@ -56,6 +56,14 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
       { value: "unsure", label: "Not sure yet" },
     ],
   },
+  timeline: {
+    type: "similarity",
+    weight: 2.5,
+    scaleMin: 1,
+    scaleMax: 5,
+    label: "Readiness to settle down",
+    anchors: ["No rush at all", "Ready very soon"],
+  },
   relationship_goal: {
     type: "exact",
     weight: 3,

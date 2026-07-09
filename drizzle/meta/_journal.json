@@ -15,6 +15,13 @@
       "when": 1783614226106,
       "tag": "0001_careless_reptil",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783614646610,
+      "tag": "0002_hesitant_expediter",
+      "breakpoints": true
     }
   ]
 }

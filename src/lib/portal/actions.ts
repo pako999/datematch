@@ -7,6 +7,8 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { ageOn } from "@/lib/matching/score";
 import { QUESTION_RULES } from "@/lib/matching/questions";
+import { afterClientChange } from "@/lib/matching/refresh";
+import { capture } from "@/lib/analytics";
 
 export interface ActionResult {
   ok: boolean;
@@ -97,17 +99,24 @@ export async function saveBasics(
   };
 
   const existingId = await getMyClientId(userId);
+  let clientId = existingId;
   if (existingId) {
     await db()
       .update(schema.clients)
       .set(values)
       .where(eq(schema.clients.id, existingId));
   } else {
-    await db()
+    const [row] = await db()
       .insert(schema.clients)
-      .values({ ...values, clerkUserId: userId, status: "lead" });
+      .values({ ...values, clerkUserId: userId, status: "lead" })
+      .returning({ id: schema.clients.id });
+    clientId = row!.id;
+    capture("client_created", userId, { source: "portal", clientId });
   }
 
+  if (clientId) {
+    await afterClientChange(clientId, { bioChanged: true });
+  }
   revalidatePath(PROFILE_PATH);
   return { ok: true };
 }
@@ -194,6 +203,7 @@ export async function savePreferences(
     .set({ updatedAt: new Date() })
     .where(eq(schema.clients.id, clientId));
 
+  await afterClientChange(clientId);
   revalidatePath(PROFILE_PATH);
   return { ok: true };
 }
@@ -261,9 +271,15 @@ export async function saveQuestionnaire(
   }
   await db()
     .update(schema.clients)
-    .set({ updatedAt: new Date() })
+    .set({ updatedAt: new Date(), intakeSummary: null })
     .where(eq(schema.clients.id, clientId));
 
+  capture("intake_completed", userId, {
+    clientId,
+    answers: answers.length,
+    source: "portal",
+  });
+  await afterClientChange(clientId);
   revalidatePath(PROFILE_PATH);
   return { ok: true };
 }
@@ -290,6 +306,7 @@ export async function saveConsent(
     })
     .where(eq(schema.clients.id, clientId));
 
+  await afterClientChange(clientId);
   revalidatePath(PROFILE_PATH);
   return { ok: true };
 }
