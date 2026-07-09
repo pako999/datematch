@@ -3,16 +3,10 @@ import { ClerkProvider, UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getCurrentStaff } from "@/lib/auth";
+import { getI18n } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export const dynamic = "force-dynamic";
-
-const NAV = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/clients", label: "Clients" },
-  { href: "/introductions", label: "Introductions" },
-  { href: "/feedback", label: "Feedback" },
-  { href: "/settings", label: "Settings" },
-];
 
 export default async function StaffLayout({
   children,
@@ -20,7 +14,16 @@ export default async function StaffLayout({
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
+  const { t } = await getI18n();
   const staff = await getCurrentStaff();
+
+  const nav = [
+    { href: "/dashboard", label: t.staff.navDashboard },
+    { href: "/clients", label: t.staff.navClients },
+    { href: "/introductions", label: t.staff.navIntroductions },
+    { href: "/feedback", label: t.staff.navFeedback },
+    { href: "/settings", label: t.staff.navSettings },
+  ];
 
   return (
     <ClerkProvider>
@@ -30,9 +33,9 @@ export default async function StaffLayout({
             <Link href="/dashboard" className="text-base font-semibold tracking-tight">
               DateMatch
             </Link>
-            <p className="mt-0.5 text-xs text-muted-foreground">Staff console</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t.staff.consoleSub}</p>
             <nav className="mt-6 flex flex-col gap-1">
-              {NAV.map((item) => (
+              {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -42,11 +45,14 @@ export default async function StaffLayout({
                 </Link>
               ))}
             </nav>
-            <div className="mt-auto flex items-center gap-2 pt-6">
-              <UserButton />
-              <div className="min-w-0">
-                <p className="truncate text-xs font-medium">{staff.name}</p>
-                <p className="text-xs text-muted-foreground">{staff.role}</p>
+            <div className="mt-auto space-y-3 pt-6">
+              <LanguageSwitcher />
+              <div className="flex items-center gap-2">
+                <UserButton />
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium">{staff.name}</p>
+                  <p className="text-xs text-muted-foreground">{staff.role}</p>
+                </div>
               </div>
             </div>
           </aside>
@@ -55,14 +61,10 @@ export default async function StaffLayout({
       ) : (
         <main className="flex min-h-screen items-center justify-center p-8">
           <div className="max-w-md text-center">
-            <h1 className="text-xl font-semibold">No staff access</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Your account isn&apos;t registered as agency staff. If you&apos;re a
-              client, head to your profile instead. If you should have staff
-              access, ask an administrator to add you in Settings.
-            </p>
+            <h1 className="text-xl font-semibold">{t.staff.noAccessTitle}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{t.staff.noAccessText}</p>
             <Link href="/portal" className="mt-4 inline-block text-sm underline">
-              Go to my client profile
+              {t.staff.goToPortal}
             </Link>
           </div>
         </main>

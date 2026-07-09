@@ -15,6 +15,9 @@ import { generateRationale } from "@/lib/matching/explain";
 import { recomputeScoresForClient } from "@/lib/matching/candidates";
 import { sendClientDeleted } from "@/inngest/client";
 import { deletePhotoBlob, uploadPhotoBlob } from "@/lib/storage";
+import { geocodeCity } from "@/lib/geocode";
+import { getI18n } from "@/lib/i18n";
+import { fill, questionLabel, type Dict } from "@/lib/i18n/dictionaries";
 
 export interface ActionResult {
   ok: boolean;
@@ -41,30 +44,30 @@ function fail(error: string): ActionResult {
 /* Create / edit basics                                                */
 /* ------------------------------------------------------------------ */
 
-const basicsSchema = z.object({
-  fullName: z.string().trim().min(2, "Full name is required").max(200),
-  email: z.string().trim().email("Valid email required").max(200),
-  phone: z.string().trim().max(40).optional(),
-  birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Birthdate required"),
-  gender: z.enum(schema.genderEnum.enumValues),
-  city: z.string().trim().min(2, "City is required").max(100),
-  lat: z.coerce.number().min(-90).max(90).nullable(),
-  lng: z.coerce.number().min(-180).max(180).nullable(),
-  bio: z.string().trim().max(4000),
-});
+function basicsSchema(t: Dict) {
+  return z.object({
+    fullName: z.string().trim().min(2, t.staffErrors.fullNameRequired).max(200),
+    email: z.string().trim().email(t.staffErrors.emailRequired).max(200),
+    phone: z.string().trim().max(40).optional(),
+    birthdate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, t.staffErrors.birthdateRequired),
+    gender: z.enum(schema.genderEnum.enumValues),
+    city: z.string().trim().min(2, t.staffErrors.cityRequired).max(100),
+    country: z.string().trim().min(2).max(100),
+    bio: z.string().trim().max(4000),
+  });
+}
 
-function parseBasics(formData: FormData) {
-  const latRaw = String(formData.get("lat") ?? "").trim();
-  const lngRaw = String(formData.get("lng") ?? "").trim();
-  return basicsSchema.safeParse({
+function parseBasics(formData: FormData, t: Dict) {
+  return basicsSchema(t).safeParse({
     fullName: formData.get("fullName"),
     email: formData.get("email"),
     phone: formData.get("phone") ?? undefined,
     birthdate: formData.get("birthdate"),
     gender: formData.get("gender"),
     city: formData.get("city"),
-    lat: latRaw === "" ? null : latRaw,
-    lng: lngRaw === "" ? null : lngRaw,
+    country: formData.get("country") || "Slovenija",
     bio: formData.get("bio") ?? "",
   });
 }
@@ -74,21 +77,25 @@ export async function createClient(
   formData: FormData,
 ): Promise<ActionResult> {
   const staff = await requireStaffAction({ write: true });
-  const parsed = parseBasics(formData);
+  const { t } = await getI18n();
+  const parsed = parseBasics(formData, t);
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Check the form");
+    return fail(parsed.error.issues[0]?.message ?? t.staffErrors.checkForm);
   }
   const birthdate = new Date(`${parsed.data.birthdate}T00:00:00Z`);
   if (ageOn(birthdate, new Date()) < 18) {
-    return fail("Clients must be at least 18 years old");
+    return fail(t.staffErrors.tooYoung);
   }
 
+  const coords = await geocodeCity(parsed.data.city, parsed.data.country);
   const [row] = await db()
     .insert(schema.clients)
     .values({
       ...parsed.data,
       phone: parsed.data.phone || null,
       birthdate,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
       status: "lead",
       assignedStaffId: staff.id,
       updatedByStaffId: staff.id,
@@ -106,22 +113,31 @@ export async function updateClientBasics(
   formData: FormData,
 ): Promise<ActionResult> {
   const { staff, client } = await requireManagedClient(clientId);
-  const parsed = parseBasics(formData);
+  const { t } = await getI18n();
+  const parsed = parseBasics(formData, t);
   if (!parsed.success) {
-    return fail(parsed.error.issues[0]?.message ?? "Check the form");
+    return fail(parsed.error.issues[0]?.message ?? t.staffErrors.checkForm);
   }
   const birthdate = new Date(`${parsed.data.birthdate}T00:00:00Z`);
   if (ageOn(birthdate, new Date()) < 18) {
-    return fail("Clients must be at least 18 years old");
+    return fail(t.staffErrors.tooYoung);
   }
 
   const bioChanged = client.bio !== parsed.data.bio;
+  const locationChanged =
+    client.city !== parsed.data.city || client.country !== parsed.data.country;
+  const coords = locationChanged
+    ? await geocodeCity(parsed.data.city, parsed.data.country)
+    : null;
   await db()
     .update(schema.clients)
     .set({
       ...parsed.data,
       phone: parsed.data.phone || null,
       birthdate,
+      ...(locationChanged
+        ? { lat: coords?.lat ?? null, lng: coords?.lng ?? null }
+        : {}),
       updatedAt: new Date(),
       updatedByStaffId: staff.id,
       // Bio changed → stale summary and embedding.
@@ -190,6 +206,7 @@ export async function updateClientPreferences(
   formData: FormData,
 ): Promise<ActionResult> {
   const { staff } = await requireManagedClient(clientId);
+  const { t } = await getI18n();
 
   const genders = formData
     .getAll("interestedInGenders")
@@ -198,17 +215,17 @@ export async function updateClientPreferences(
     genders.length === 0 ||
     !genders.every((g) => schema.genderEnum.enumValues.includes(g))
   ) {
-    return fail("Select at least one gender preference");
+    return fail(t.staffErrors.selectGender);
   }
   const minAge = Number(formData.get("minAge"));
   const maxAge = Number(formData.get("maxAge"));
   if (!Number.isInteger(minAge) || !Number.isInteger(maxAge) || minAge < 18 || maxAge > 99 || maxAge < minAge) {
-    return fail("Age range must be 18–99 with max ≥ min");
+    return fail(t.staffErrors.ageRangeInvalid);
   }
   const maxDistanceRaw = String(formData.get("maxDistanceKm") ?? "").trim();
   const maxDistanceKm = maxDistanceRaw === "" ? null : Number(maxDistanceRaw);
   if (maxDistanceKm !== null && (!Number.isInteger(maxDistanceKm) || maxDistanceKm < 1)) {
-    return fail("Max distance must be a positive whole number of km");
+    return fail(t.staffErrors.distanceInvalid);
   }
 
   // Dealbreakers/must-haves come as JSON from the advanced editor.
@@ -218,20 +235,20 @@ export async function updateClientPreferences(
     dealbreakers = JSON.parse(String(formData.get("dealbreakers") ?? "[]"));
     mustHaves = JSON.parse(String(formData.get("mustHaves") ?? "[]"));
   } catch {
-    return fail("Dealbreakers / must-haves must be valid JSON arrays");
+    return fail(t.staffErrors.rulesJsonInvalid);
   }
   const dbParsed = ruleArray.safeParse(dealbreakers);
   const mhParsed = ruleArray.safeParse(mustHaves);
   if (!dbParsed.success || !mhParsed.success) {
-    return fail(
-      'Rules must look like [{"questionKey":"smoking","disallowedValues":["regularly"]}]',
-    );
+    return fail(t.staffErrors.rulesShapeInvalid);
   }
   const knownKeys = new Set(Object.keys(QUESTION_RULES));
   const badKey = [...dbParsed.data, ...mhParsed.data].find(
     (r) => !knownKeys.has(r.questionKey),
   );
-  if (badKey) return fail(`Unknown question key: ${badKey.questionKey}`);
+  if (badKey) {
+    return fail(fill(t.staffErrors.unknownQuestionKey, { key: badKey.questionKey }));
+  }
 
   const values = {
     interestedInGenders: genders,
@@ -274,6 +291,9 @@ export async function updateClientIntake(
   formData: FormData,
 ): Promise<ActionResult> {
   const { staff } = await requireManagedClient(clientId);
+  const { t } = await getI18n();
+  const invalid = (key: string, fallback: string) =>
+    fail(fill(t.staffErrors.invalidAnswer, { label: questionLabel(t, key, fallback) }));
 
   const answers: { questionKey: string; value: unknown }[] = [];
   for (const [key, rule] of Object.entries(QUESTION_RULES)) {
@@ -284,21 +304,21 @@ export async function updateClientIntake(
       const min = rule.scaleMin ?? 1;
       const max = rule.scaleMax ?? 5;
       if (!Number.isInteger(num) || num < min || num > max) {
-        return fail(`Invalid answer for "${rule.label}"`);
+        return invalid(key, rule.label);
       }
       answers.push({ questionKey: key, value: num });
     } else if (rule.type === "exact") {
       const raw = String(formData.get(key) ?? "").trim();
       if (raw === "") continue;
       if (!rule.options?.some((o) => o.value === raw)) {
-        return fail(`Invalid answer for "${rule.label}"`);
+        return invalid(key, rule.label);
       }
       answers.push({ questionKey: key, value: raw });
     } else {
       const raws = formData.getAll(key).map(String);
       if (raws.length === 0) continue;
       if (!raws.every((v) => rule.options?.some((o) => o.value === v))) {
-        return fail(`Invalid answer for "${rule.label}"`);
+        return invalid(key, rule.label);
       }
       answers.push({ questionKey: key, value: raws });
     }
@@ -357,13 +377,14 @@ export async function uploadClientPhoto(
   formData: FormData,
 ): Promise<ActionResult> {
   await requireManagedClient(clientId);
+  const { t } = await getI18n();
   const file = formData.get("photo");
-  if (!(file instanceof File)) return fail("Choose a photo to upload");
+  if (!(file instanceof File)) return fail(t.staffErrors.choosePhoto);
   try {
     const url = await uploadPhotoBlob(clientId, file);
     await insertPhotoRow(clientId, url);
   } catch (err) {
-    return fail(err instanceof Error ? err.message : "Upload failed");
+    return fail(err instanceof Error ? err.message : t.staffErrors.uploadFailed);
   }
   revalidatePath(`/clients/${clientId}`);
   return { ok: true };

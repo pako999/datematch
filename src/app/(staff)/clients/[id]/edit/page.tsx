@@ -13,6 +13,8 @@ import {
   StaffPreferencesForm,
 } from "@/components/staff-client-forms";
 import { Card } from "@/components/ui";
+import { getI18n } from "@/lib/i18n";
+import { fill } from "@/lib/i18n/dictionaries";
 
 export default async function EditClientPage({
   params,
@@ -20,6 +22,7 @@ export default async function EditClientPage({
   params: Promise<{ id: string }>;
 }) {
   const staff = await requireStaffPage();
+  const { t } = await getI18n();
   const { id } = await params;
   const detail = await getClientDetail(id);
   if (!detail) notFound();
@@ -31,14 +34,14 @@ export default async function EditClientPage({
     <div className="max-w-3xl space-y-4">
       <div className="flex items-baseline justify-between">
         <h1 className="text-xl font-semibold tracking-tight">
-          Edit — {client.fullName}
+          {fill(t.staff.editTitle, { name: client.fullName })}
         </h1>
         <Link href={`/clients/${id}`} className="text-sm hover:underline">
-          ← Back to profile
+          ← {t.staff.backToProfile}
         </Link>
       </div>
 
-      <Card title="Basics">
+      <Card title={t.staff.basics}>
         <StaffBasicsForm
           action={updateClientBasics.bind(null, id)}
           initial={{
@@ -48,15 +51,14 @@ export default async function EditClientPage({
             birthdate: client.birthdate.toISOString().slice(0, 10),
             gender: client.gender,
             city: client.city,
-            lat: client.lat?.toString() ?? "",
-            lng: client.lng?.toString() ?? "",
+            country: client.country,
             bio: client.bio,
           }}
-          submitLabel="Save basics"
+          submitLabel={t.staff.saveBasics}
         />
       </Card>
 
-      <Card title="Preferences">
+      <Card title={t.staff.preferences}>
         <StaffPreferencesForm
           action={updateClientPreferences.bind(null, id)}
           initial={
@@ -74,7 +76,7 @@ export default async function EditClientPage({
         />
       </Card>
 
-      <Card title="Compatibility questionnaire">
+      <Card title={t.staff.questionnaire}>
         <StaffIntakeForm action={updateClientIntake.bind(null, id)} initial={intake} />
       </Card>
     </div>

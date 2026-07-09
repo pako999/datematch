@@ -73,7 +73,7 @@ export async function generateRationale(
     loadIntake(clientB.id),
   ]);
 
-  const prompt = `You are briefing a professional matchmaker colleague on a potential pairing. Based ONLY on the facts below, write a 2–3 sentence staff-facing rationale: lead with the strongest concrete reasons this pairing could work, then end with one gentle risk flag starting with "Watch:" — the thing an experienced human matchmaker would worry about here (differing energy, timelines, distance, lifestyle friction). Plain text, no preamble, no markdown. Never invent facts not present below; if data is thin, say so rather than embellish.
+  const prompt = `You are briefing a professional matchmaker colleague on a potential pairing. Based ONLY on the facts below, write a 2–3 sentence staff-facing rationale IN SLOVENIAN (the agency's working language): lead with the strongest concrete reasons this pairing could work, then end with one gentle risk flag starting with "Pozor:" — the thing an experienced human matchmaker would worry about here (differing energy, timelines, distance, lifestyle friction). Plain text, no preamble, no markdown. Never invent facts not present below; if data is thin, say so rather than embellish.
 
 PROFILE A
 ${profileBlock(clientA, intakeA)}

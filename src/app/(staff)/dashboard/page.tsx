@@ -11,6 +11,8 @@ import {
   formatDate,
   formatDateTime,
 } from "@/components/ui";
+import { getI18n } from "@/lib/i18n";
+import { fill } from "@/lib/i18n/dictionaries";
 
 const ACTION_STATUSES: schema.IntroStatus[] = [
   "suggested",
@@ -21,6 +23,7 @@ const ACTION_STATUSES: schema.IntroStatus[] = [
 
 export default async function DashboardPage() {
   const staff = await requireStaffPage();
+  const { t } = await getI18n();
   const now = Date.now();
   const proposedCutoff = new Date(now - 5 * 86_400_000);
   const feedbackCutoff = new Date(now - 7 * 86_400_000);
@@ -103,15 +106,17 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold tracking-tight">
-        Good day, {staff.name.split(" ")[0]}
+        {fill(t.staff.goodDay, { name: staff.name.split(" ")[0] ?? "" })}
       </h1>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title={`My clients (${myClients.length})`}>
+        <Card title={fill(t.staff.myClients, { n: myClients.length })}>
           {myClients.length === 0 ? (
             <EmptyState>
-              No assigned leads or active clients.{" "}
-              <Link href="/clients" className="underline">Browse the roster</Link>.
+              {t.staff.noMyClients}{" "}
+              <Link href="/clients" className="underline">
+                {t.staff.browseRoster}
+              </Link>
             </EmptyState>
           ) : (
             <ul className="divide-y divide-black/5 dark:divide-white/10">
@@ -120,9 +125,9 @@ export default async function DashboardPage() {
                   <Link href={`/clients/${c.id}`} className="font-medium hover:underline">
                     {c.fullName}
                   </Link>
-                  <ClientStatusBadge status={c.status} />
+                  <ClientStatusBadge status={c.status} label={t.clientStatus[c.status]} />
                   <span className="ml-auto text-xs text-muted-foreground">
-                    {c.city} · updated {formatDate(c.updatedAt)}
+                    {c.city} · {formatDate(c.updatedAt)}
                   </span>
                 </li>
               ))}
@@ -130,9 +135,9 @@ export default async function DashboardPage() {
           )}
         </Card>
 
-        <Card title={`Intros needing action (${actionIntros.length})`}>
+        <Card title={fill(t.staff.needsAction, { n: actionIntros.length })}>
           {actionIntros.length === 0 ? (
-            <EmptyState>Nothing waiting on you. 🎉</EmptyState>
+            <EmptyState>{t.staff.nothingWaiting}</EmptyState>
           ) : (
             <ul className="divide-y divide-black/5 dark:divide-white/10">
               {actionIntros.map((i) => (
@@ -140,7 +145,7 @@ export default async function DashboardPage() {
                   <Link href={`/introductions/${i.id}`} className="font-medium hover:underline">
                     {pairLabel(i)}
                   </Link>
-                  <IntroStatusBadge status={i.status} />
+                  <IntroStatusBadge status={i.status} label={t.introStatus[i.status]} />
                   <span className="ml-auto text-xs text-muted-foreground">
                     {formatDate(i.updatedAt)}
                   </span>
@@ -150,9 +155,9 @@ export default async function DashboardPage() {
           )}
         </Card>
 
-        <Card title={`Stale intros (${staleAll.length})`}>
+        <Card title={fill(t.staff.staleIntros, { n: staleAll.length })}>
           {staleAll.length === 0 ? (
-            <EmptyState>No intros gathering dust.</EmptyState>
+            <EmptyState>{t.staff.noStale}</EmptyState>
           ) : (
             <ul className="divide-y divide-black/5 dark:divide-white/10">
               {staleAll.map((i) => (
@@ -160,11 +165,9 @@ export default async function DashboardPage() {
                   <Link href={`/introductions/${i.id}`} className="font-medium hover:underline">
                     {pairLabel(i)}
                   </Link>
-                  <IntroStatusBadge status={i.status} />
+                  <IntroStatusBadge status={i.status} label={t.introStatus[i.status]} />
                   <span className="ml-auto text-xs text-muted-foreground">
-                    {i.status === "proposed"
-                      ? "awaiting answers > 5 days"
-                      : "feedback missing > 7 days"}
+                    {i.status === "proposed" ? t.staff.staleProposed : t.staff.staleFeedback}
                   </span>
                 </li>
               ))}
@@ -172,17 +175,17 @@ export default async function DashboardPage() {
           )}
         </Card>
 
-        <Card title={`New feedback (${recentFeedback.length})`}>
+        <Card title={fill(t.staff.newFeedback, { n: recentFeedback.length })}>
           {recentFeedback.length === 0 ? (
-            <EmptyState>No feedback this week.</EmptyState>
+            <EmptyState>{t.staff.noFeedbackWeek}</EmptyState>
           ) : (
             <ul className="divide-y divide-black/5 dark:divide-white/10">
               {recentFeedback.map((f) => (
                 <li key={f.id} className="flex items-center gap-2 py-2 text-sm">
-                  <SentimentBadge sentiment={f.sentiment} />
+                  <SentimentBadge sentiment={f.sentiment} label={t.sentiment[f.sentiment]} />
                   <span>
                     <span className="font-medium">{nameById.get(f.fromClientId) ?? "?"}</span>{" "}
-                    on {nameById.get(f.aboutClientId) ?? "?"} — {f.rating}/5
+                    {t.staff.on} {nameById.get(f.aboutClientId) ?? "?"} — {f.rating}/5
                   </span>
                   <span className="ml-auto text-xs text-muted-foreground">
                     {formatDateTime(f.createdAt)}

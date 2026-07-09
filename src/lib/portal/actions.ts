@@ -10,6 +10,9 @@ import { QUESTION_RULES } from "@/lib/matching/questions";
 import { afterClientChange } from "@/lib/matching/refresh";
 import { capture } from "@/lib/analytics";
 import { deletePhotoBlob, uploadPhotoBlob } from "@/lib/storage";
+import { geocodeCity } from "@/lib/geocode";
+import { getI18n } from "@/lib/i18n";
+import { fill, questionLabel, type Dict } from "@/lib/i18n/dictionaries";
 
 export interface ActionResult {
   ok: boolean;
@@ -36,58 +39,61 @@ async function getMyClientId(userId: string): Promise<string | null> {
 /* Basics (creates the client record on first save)                    */
 /* ------------------------------------------------------------------ */
 
-const basicsSchema = z.object({
-  fullName: z.string().trim().min(2, "Please enter your full name").max(200),
-  phone: z.string().trim().max(40).optional(),
-  birthdate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter your date of birth"),
-  gender: z.enum(schema.genderEnum.enumValues),
-  city: z.string().trim().min(2, "Please enter your city").max(100),
-  bio: z
-    .string()
-    .trim()
-    .max(4000, "Please keep your introduction under 4000 characters"),
-});
+function basicsSchema(t: Dict) {
+  return z.object({
+    fullName: z.string().trim().min(2, t.portalErrors.fullNameRequired).max(200),
+    phone: z.string().trim().max(40).optional(),
+    birthdate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, t.portalErrors.birthdateRequired),
+    gender: z.enum(schema.genderEnum.enumValues),
+    city: z.string().trim().min(2, t.portalErrors.cityRequired).max(100),
+    country: z.string().trim().min(2).max(100),
+    bio: z.string().trim().max(4000, t.portalErrors.bioTooLong),
+  });
+}
 
 export async function saveBasics(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const userId = await requireUserId();
+  const { t } = await getI18n();
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress;
   if (!email) {
-    return { ok: false, error: "Your account has no email address." };
+    return { ok: false, error: t.portalErrors.noEmail };
   }
 
-  const parsed = basicsSchema.safeParse({
+  const parsed = basicsSchema(t).safeParse({
     fullName: formData.get("fullName"),
     phone: formData.get("phone") ?? undefined,
     birthdate: formData.get("birthdate"),
     gender: formData.get("gender"),
     city: formData.get("city"),
+    country: formData.get("country") || "Slovenija",
     bio: formData.get("bio") ?? "",
   });
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Please check the form.",
+      error: parsed.error.issues[0]?.message ?? t.portalErrors.checkForm,
     };
   }
 
   const birthdate = new Date(`${parsed.data.birthdate}T00:00:00Z`);
   if (Number.isNaN(birthdate.getTime())) {
-    return { ok: false, error: "Please enter a valid date of birth." };
+    return { ok: false, error: t.portalErrors.invalidBirthdate };
   }
   // Age gate: the agency only takes on adult clients.
   if (ageOn(birthdate, new Date()) < 18) {
-    return { ok: false, error: "You must be at least 18 years old to register." };
+    return { ok: false, error: t.portalErrors.tooYoung };
   }
   if (ageOn(birthdate, new Date()) > 100) {
-    return { ok: false, error: "Please double-check your date of birth." };
+    return { ok: false, error: t.portalErrors.checkBirthdate };
   }
 
+  const coords = await geocodeCity(parsed.data.city, parsed.data.country);
   const values = {
     fullName: parsed.data.fullName,
     email,
@@ -95,6 +101,8 @@ export async function saveBasics(
     birthdate,
     gender: parsed.data.gender,
     city: parsed.data.city,
+    country: parsed.data.country,
+    ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
     bio: parsed.data.bio,
     updatedAt: new Date(),
   };
@@ -126,33 +134,36 @@ export async function saveBasics(
 /* Match preferences                                                   */
 /* ------------------------------------------------------------------ */
 
-const preferencesSchema = z
-  .object({
-    interestedInGenders: z
-      .array(z.enum(schema.genderEnum.enumValues))
-      .min(1, "Select at least one option for who you'd like to meet"),
-    minAge: z.coerce.number().int().min(18, "Minimum age is 18").max(99),
-    maxAge: z.coerce.number().int().min(18).max(99),
-    maxDistanceKm: z.coerce.number().int().min(1).max(1000).nullable(),
-    noSmokers: z.boolean(),
-    partnerMustWantChildren: z.boolean(),
-  })
-  .refine((v) => v.maxAge >= v.minAge, {
-    message: "Maximum age must not be below minimum age",
-  });
+function preferencesSchema(t: Dict) {
+  return z
+    .object({
+      interestedInGenders: z
+        .array(z.enum(schema.genderEnum.enumValues))
+        .min(1, t.portalErrors.selectGenderInterest),
+      minAge: z.coerce.number().int().min(18, t.portalErrors.minAge18).max(99),
+      maxAge: z.coerce.number().int().min(18).max(99),
+      maxDistanceKm: z.coerce.number().int().min(1).max(1000).nullable(),
+      noSmokers: z.boolean(),
+      partnerMustWantChildren: z.boolean(),
+    })
+    .refine((v) => v.maxAge >= v.minAge, {
+      message: t.portalErrors.maxAgeBelowMin,
+    });
+}
 
 export async function savePreferences(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const userId = await requireUserId();
+  const { t } = await getI18n();
   const clientId = await getMyClientId(userId);
   if (!clientId) {
-    return { ok: false, error: "Please save your basic details first." };
+    return { ok: false, error: t.portalErrors.saveBasicsFirst };
   }
 
   const maxDistanceRaw = String(formData.get("maxDistanceKm") ?? "").trim();
-  const parsed = preferencesSchema.safeParse({
+  const parsed = preferencesSchema(t).safeParse({
     interestedInGenders: formData.getAll("interestedInGenders"),
     minAge: formData.get("minAge"),
     maxAge: formData.get("maxAge"),
@@ -163,7 +174,7 @@ export async function savePreferences(
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? "Please check the form.",
+      error: parsed.error.issues[0]?.message ?? t.portalErrors.checkForm,
     };
   }
 
@@ -218,10 +229,17 @@ export async function saveQuestionnaire(
   formData: FormData,
 ): Promise<ActionResult> {
   const userId = await requireUserId();
+  const { t } = await getI18n();
   const clientId = await getMyClientId(userId);
   if (!clientId) {
-    return { ok: false, error: "Please save your basic details first." };
+    return { ok: false, error: t.portalErrors.saveBasicsFirst };
   }
+  const invalid = (key: string, fallback: string): ActionResult => ({
+    ok: false,
+    error: fill(t.portalErrors.invalidAnswer, {
+      label: questionLabel(t, key, fallback),
+    }),
+  });
 
   const answers: { questionKey: string; value: unknown }[] = [];
   for (const [key, rule] of Object.entries(QUESTION_RULES)) {
@@ -234,7 +252,7 @@ export async function saveQuestionnaire(
         const min = rule.scaleMin ?? 1;
         const max = rule.scaleMax ?? 5;
         if (!Number.isInteger(num) || num < min || num > max) {
-          return { ok: false, error: `Invalid answer for "${rule.label}".` };
+          return invalid(key, rule.label);
         }
         answers.push({ questionKey: key, value: num });
         break;
@@ -243,7 +261,7 @@ export async function saveQuestionnaire(
         const raw = String(formData.get(key) ?? "").trim();
         if (raw === "") break;
         if (!rule.options?.some((o) => o.value === raw)) {
-          return { ok: false, error: `Invalid answer for "${rule.label}".` };
+          return invalid(key, rule.label);
         }
         answers.push({ questionKey: key, value: raw });
         break;
@@ -252,7 +270,7 @@ export async function saveQuestionnaire(
         const raws = formData.getAll(key).map(String);
         if (raws.length === 0) break;
         if (!raws.every((v) => rule.options?.some((o) => o.value === v))) {
-          return { ok: false, error: `Invalid answer for "${rule.label}".` };
+          return invalid(key, rule.label);
         }
         answers.push({ questionKey: key, value: raws });
         break;
@@ -296,9 +314,10 @@ export async function uploadMyPhoto(
   formData: FormData,
 ): Promise<ActionResult> {
   const userId = await requireUserId();
+  const { t } = await getI18n();
   const clientId = await getMyClientId(userId);
   if (!clientId) {
-    return { ok: false, error: "Please save your basic details first." };
+    return { ok: false, error: t.portalErrors.saveBasicsFirst };
   }
 
   const existing = await db()
@@ -306,12 +325,15 @@ export async function uploadMyPhoto(
     .from(schema.clientPhotos)
     .where(eq(schema.clientPhotos.clientId, clientId));
   if (existing.length >= MAX_PORTAL_PHOTOS) {
-    return { ok: false, error: `You can upload up to ${MAX_PORTAL_PHOTOS} photos.` };
+    return {
+      ok: false,
+      error: fill(t.portalErrors.maxPhotos, { n: MAX_PORTAL_PHOTOS }),
+    };
   }
 
   const file = formData.get("photo");
   if (!(file instanceof File)) {
-    return { ok: false, error: "Choose a photo to upload." };
+    return { ok: false, error: t.portalErrors.choosePhoto };
   }
   try {
     const url = await uploadPhotoBlob(clientId, file);
@@ -324,7 +346,7 @@ export async function uploadMyPhoto(
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : "Upload failed.",
+      error: err instanceof Error ? err.message : t.portalErrors.uploadFailed,
     };
   }
 

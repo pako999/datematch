@@ -144,8 +144,8 @@ export const staleProposedReminder = inngest.createFunction(
         for (const s of await staffEmailsForIntro(intro)) {
           await nudgeStaff({
             staffEmail: s.email,
-            subject: "Introduction waiting on client responses",
-            body: `An introduction has been sitting in "proposed" for over ${PROPOSED_STALE_DAYS} days. Chase both clients for an answer or close it out.`,
+            subject: "Predstavitev čaka na odgovora strank",
+            body: `Predstavitev je v stanju »ponujeno« že več kot ${PROPOSED_STALE_DAYS} dni. Pokličite obe stranki za odgovor ali jo zaključite.`,
             path: `/introductions/${intro.id}`,
           });
         }
@@ -196,8 +196,8 @@ export const missingFeedbackReminder = inngest.createFunction(
         for (const s of await staffEmailsForIntro(intro)) {
           await nudgeStaff({
             staffEmail: s.email,
-            subject: "Collect date feedback",
-            body: `A pair met over ${FEEDBACK_STALE_DAYS} days ago and feedback is still missing from at least one side. Call them while it's fresh — feedback trains the matching.`,
+            subject: "Zberite povratne informacije po zmenku",
+            body: `Par se je srečal pred več kot ${FEEDBACK_STALE_DAYS} dnevi in povratne informacije vsaj ene strani še manjkajo. Pokličite ju, dokler je vtis svež — povratne informacije izboljšujejo ujemanje.`,
             path: `/introductions/${intro.id}`,
           });
         }

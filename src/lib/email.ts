@@ -36,7 +36,7 @@ function staffTemplate(title: string, body: string, ctaPath: string, cta: string
     <p style="margin-top:20px">
       <a href="${APP_URL()}${ctaPath}" style="background:#111;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-size:14px">${cta}</a>
     </p>
-    <p style="margin-top:24px;font-size:12px;color:#888">DateMatch staff console</p>
+    <p style="margin-top:24px;font-size:12px;color:#888">DateMatch — konzola za zaposlene</p>
   </div>`;
 }
 
@@ -53,7 +53,7 @@ export async function notifyStaffIntroUpdate(opts: {
   await send(
     opts.staffEmail,
     `[DateMatch] ${opts.headline}`,
-    staffTemplate(opts.headline, opts.detail, `/introductions/${opts.introId}`, "Open introduction"),
+    staffTemplate(opts.headline, opts.detail, `/introductions/${opts.introId}`, "Odpri predstavitev"),
   );
 }
 
@@ -66,7 +66,7 @@ export async function nudgeStaff(opts: {
   await send(
     opts.staffEmail,
     `[DateMatch] ${opts.subject}`,
-    staffTemplate(opts.subject, opts.body, opts.path, "Open in console"),
+    staffTemplate(opts.subject, opts.body, opts.path, "Odpri v konzoli"),
   );
 }
 
@@ -82,16 +82,16 @@ export async function sendIntroEmail(opts: {
 }): Promise<void> {
   const html = `
   <div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px">
-    <h2 style="font-size:18px;margin:0 0 12px">A lovely introduction awaits</h2>
+    <h2 style="font-size:18px;margin:0 0 12px">Čaka vas prijetna predstavitev</h2>
     <p style="font-size:14px;line-height:1.6;color:#333">
-      Dear ${opts.toFirstName},<br/><br/>
-      Wonderful news — you and ${opts.otherFirstName} have both said yes to an
-      introduction. Your matchmaker ${opts.matchmakerName} will be in touch
-      shortly to arrange a time and place that suits you both.
+      Pozdravljeni, ${opts.toFirstName}!<br/><br/>
+      Čudovita novica — vi in ${opts.otherFirstName} sta oba privolila v
+      predstavitev. Vaš svetovalec ${opts.matchmakerName} vas bo kmalu
+      kontaktiral in uskladil termin ter kraj, ki ustrezata obema.
     </p>
     <p style="margin-top:24px;font-size:12px;color:#888">
-      Sent with care by your matchmaking team. Reply to this email to reach us.
+      S skrbnostjo poslala vaša ekipa DateMatch. Za vprašanja odgovorite na to sporočilo.
     </p>
   </div>`;
-  await send(opts.toEmail, "You have an introduction!", html);
+  await send(opts.toEmail, "Čaka vas predstavitev!", html);
 }

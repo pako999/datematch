@@ -7,18 +7,20 @@ import {
   type ActionResult,
 } from "@/lib/staff/staff-actions";
 import { ui } from "@/components/ui";
+import { useDict } from "@/components/locale-provider";
 
 export function LoadDemoDataForm() {
+  const { t } = useDict();
   const [state, formAction, pending] = useActionState(loadDemoData, null);
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-3">
       <button type="submit" disabled={pending} className={ui.btnPrimary}>
-        {pending ? "Loading demo data…" : "Load demo data"}
+        {pending ? t.staff.loadingDemoData : t.staff.loadDemoData}
       </button>
       {state &&
         (state.ok ? (
           <span className="text-sm text-emerald-600 dark:text-emerald-400">
-            Demo roster loaded — see Clients and Introductions.
+            {t.staff.demoLoaded}
           </span>
         ) : (
           <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
@@ -28,19 +30,20 @@ export function LoadDemoDataForm() {
 }
 
 export function AddStaffForm() {
+  const { t } = useDict();
   const [state, formAction, pending] = useActionState(addStaffMember, null);
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-2">
       <div>
-        <label className={ui.label} htmlFor="new-staff-email">Email</label>
+        <label className={ui.label} htmlFor="new-staff-email">{t.common.email}</label>
         <input id="new-staff-email" name="email" type="email" required className={ui.input} />
       </div>
       <div>
-        <label className={ui.label} htmlFor="new-staff-name">Name</label>
+        <label className={ui.label} htmlFor="new-staff-name">{t.common.name}</label>
         <input id="new-staff-name" name="name" required className={ui.input} />
       </div>
       <div>
-        <label className={ui.label} htmlFor="new-staff-role">Role</label>
+        <label className={ui.label} htmlFor="new-staff-role">{t.staff.role}</label>
         <select id="new-staff-role" name="role" defaultValue="matchmaker" className={ui.input}>
           <option value="admin">admin</option>
           <option value="matchmaker">matchmaker</option>
@@ -48,12 +51,12 @@ export function AddStaffForm() {
         </select>
       </div>
       <button type="submit" disabled={pending} className={ui.btnPrimary}>
-        {pending ? "Adding…" : "Add staff"}
+        {pending ? t.staff.adding : t.staff.addStaff}
       </button>
       {state &&
         (state.ok ? (
           <span className="text-sm text-emerald-600 dark:text-emerald-400">
-            Added — they get access on first sign-in.
+            {t.staff.staffAdded}
           </span>
         ) : (
           <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>

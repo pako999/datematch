@@ -6,9 +6,12 @@ import { removeStaffMember, updateStaffRole } from "@/lib/staff/staff-actions";
 import { AddStaffForm, LoadDemoDataForm } from "@/components/settings-forms";
 import { Card, ui } from "@/components/ui";
 import { COMPONENT_WEIGHTS, QUESTION_RULES } from "@/lib/matching/questions";
+import { getI18n } from "@/lib/i18n";
+import { fill, questionLabel } from "@/lib/i18n/dictionaries";
 
 export default async function SettingsPage() {
   const me = await requireStaffPage();
+  const { t } = await getI18n();
   const staffList = await listStaff();
   const isAdmin = me.role === "admin";
   const [clientCountRow] = await db()
@@ -18,17 +21,17 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-4xl space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
+      <h1 className="text-xl font-semibold tracking-tight">{t.staff.settings}</h1>
 
-      <Card title="Staff & roles">
+      <Card title={t.staff.staffRoles}>
         <div className={`${ui.card} overflow-x-auto`}>
           <table className="w-full border-collapse">
             <thead className="border-b border-black/10 dark:border-white/15">
               <tr>
-                <th className={ui.th}>Name</th>
-                <th className={ui.th}>Email</th>
-                <th className={ui.th}>Role</th>
-                <th className={ui.th}>Status</th>
+                <th className={ui.th}>{t.common.name}</th>
+                <th className={ui.th}>{t.common.email}</th>
+                <th className={ui.th}>{t.staff.role}</th>
+                <th className={ui.th}>{t.common.status}</th>
                 {isAdmin && <th className={ui.th}></th>}
               </tr>
             </thead>
@@ -37,7 +40,10 @@ export default async function SettingsPage() {
                 const pending = s.id.startsWith(PENDING_STAFF_PREFIX);
                 return (
                   <tr key={s.id} className="border-b border-black/5 last:border-0 dark:border-white/10">
-                    <td className={ui.td}>{s.name}{s.id === me.id ? " (you)" : ""}</td>
+                    <td className={ui.td}>
+                      {s.name}
+                      {s.id === me.id ? ` ${t.staff.you}` : ""}
+                    </td>
                     <td className={ui.td}>{s.email}</td>
                     <td className={ui.td}>
                       {isAdmin && s.id !== me.id ? (
@@ -47,7 +53,9 @@ export default async function SettingsPage() {
                             <option value="matchmaker">matchmaker</option>
                             <option value="readonly">readonly</option>
                           </select>
-                          <button type="submit" className={ui.btnSecondary}>Set</button>
+                          <button type="submit" className={ui.btnSecondary}>
+                            {t.staff.set}
+                          </button>
                         </form>
                       ) : (
                         s.role
@@ -56,17 +64,21 @@ export default async function SettingsPage() {
                     <td className={ui.td}>
                       {pending ? (
                         <span className="text-xs text-amber-600 dark:text-amber-400">
-                          awaiting first sign-in
+                          {t.staff.awaitingSignIn}
                         </span>
                       ) : (
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400">active</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                          {t.staff.activeStatus}
+                        </span>
                       )}
                     </td>
                     {isAdmin && (
                       <td className={ui.td}>
                         {s.id !== me.id && (
                           <form action={removeStaffMember.bind(null, s.id)}>
-                            <button type="submit" className={ui.btnDanger}>Remove</button>
+                            <button type="submit" className={ui.btnDanger}>
+                              {t.common.remove}
+                            </button>
                           </form>
                         )}
                       </td>
@@ -84,28 +96,28 @@ export default async function SettingsPage() {
         )}
       </Card>
 
-      <Card title="Scoring configuration (read-only)">
+      <Card title={t.staff.scoringConfig}>
         <p className="mb-3 text-sm text-muted-foreground">
-          Component weights: intake {COMPONENT_WEIGHTS.intake * 100}% · semantic{" "}
-          {COMPONENT_WEIGHTS.semantic * 100}% · must-haves{" "}
-          {COMPONENT_WEIGHTS.mustHaves * 100}% · proximity{" "}
-          {COMPONENT_WEIGHTS.proximity * 100}%. Question weights live in{" "}
-          <code className="text-xs">src/lib/matching/questions.ts</code> and are
-          versioned with the code so every score is reproducible.
+          {fill(t.staff.scoringConfigText, {
+            intake: COMPONENT_WEIGHTS.intake * 100,
+            semantic: COMPONENT_WEIGHTS.semantic * 100,
+            mustHaves: COMPONENT_WEIGHTS.mustHaves * 100,
+            proximity: COMPONENT_WEIGHTS.proximity * 100,
+          })}
         </p>
         <div className={`${ui.card} overflow-x-auto`}>
           <table className="w-full border-collapse">
             <thead className="border-b border-black/10 dark:border-white/15">
               <tr>
-                <th className={ui.th}>Question</th>
-                <th className={ui.th}>Rule</th>
-                <th className={ui.th}>Weight</th>
+                <th className={ui.th}>{t.staff.question}</th>
+                <th className={ui.th}>{t.staff.rule}</th>
+                <th className={ui.th}>{t.staff.weight}</th>
               </tr>
             </thead>
             <tbody>
               {Object.entries(QUESTION_RULES).map(([key, rule]) => (
                 <tr key={key} className="border-b border-black/5 last:border-0 dark:border-white/10">
-                  <td className={ui.td}>{rule.label}</td>
+                  <td className={ui.td}>{questionLabel(t, key, rule.label)}</td>
                   <td className={ui.td}>{rule.type}</td>
                   <td className={ui.td}>{rule.weight}</td>
                 </tr>
@@ -116,21 +128,15 @@ export default async function SettingsPage() {
       </Card>
 
       {isAdmin && clientCount === 0 && (
-        <Card title="Demo data">
-          <p className="mb-3 text-sm text-muted-foreground">
-            The roster is empty. Load 10 labelled test personas with real
-            engine-computed match scores and sample introductions so you can
-            click through the whole workflow. Safe: it never overwrites
-            existing data and your staff account is untouched.
-          </p>
+        <Card title={t.staff.demoData}>
+          <p className="mb-3 text-sm text-muted-foreground">{t.staff.demoDataText}</p>
           <LoadDemoDataForm />
         </Card>
       )}
 
-      <Card title="Account">
+      <Card title={t.staff.account}>
         <p className="text-sm text-muted-foreground">
-          Signed in as {me.email} ({me.role}). Manage your password, sessions,
-          and two-factor auth from the avatar menu in the sidebar.
+          {fill(t.staff.accountText, { email: me.email, role: me.role })}
         </p>
       </Card>
     </div>

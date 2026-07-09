@@ -4,26 +4,34 @@ import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { getMyProfile } from "@/lib/portal/data";
 import { QUESTION_RULES } from "@/lib/matching/questions";
+import { getI18n } from "@/lib/i18n";
+import { fill } from "@/lib/i18n/dictionaries";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default async function PortalHome() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
+  const { t } = await getI18n();
   const { client, preferences, intake } = await getMyProfile();
 
   const answered = Object.keys(intake).length;
   const totalQuestions = Object.keys(QUESTION_RULES).length;
 
   const steps = [
-    { label: "Basic details", done: Boolean(client), href: "/portal/profile#basics" },
-    { label: "Match preferences", done: Boolean(preferences), href: "/portal/profile#preferences" },
+    { label: t.portal.stepBasics, done: Boolean(client), href: "/portal/profile#basics" },
     {
-      label: `Compatibility questionnaire (${answered}/${totalQuestions})`,
+      label: t.portal.stepPreferences,
+      done: Boolean(preferences),
+      href: "/portal/profile#preferences",
+    },
+    {
+      label: fill(t.portal.stepQuestionnaire, { n: answered, total: totalQuestions }),
       done: answered > 0,
       href: "/portal/profile#questionnaire",
     },
     {
-      label: "Consent to introductions",
+      label: t.portal.stepConsent,
       done: Boolean(client?.consentToIntroduce),
       href: "/portal/profile#consent",
     },
@@ -35,18 +43,23 @@ export default async function PortalHome() {
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {client ? `Welcome, ${client.fullName.split(" ")[0]}` : "Welcome"}
+            {client
+              ? fill(t.portal.welcomeName, {
+                  name: client.fullName.split(" ")[0] ?? "",
+                })
+              : t.portal.welcome}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Your matchmaking profile
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t.portal.subtitle}</p>
         </div>
-        <UserButton />
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <UserButton />
+        </div>
       </header>
 
       <section className="rounded-lg border border-black/10 p-5 dark:border-white/15">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Profile completion
+          {t.portal.completion}
         </h2>
         <ul className="mt-4 space-y-3">
           {steps.map((s) => (
@@ -70,20 +83,15 @@ export default async function PortalHome() {
 
         <div className="mt-6 border-t border-black/10 pt-5 dark:border-white/15">
           {complete ? (
-            <p className="text-sm">
-              Your profile is complete. A matchmaker will review it and be in
-              touch — we&apos;ll only ever introduce you with your consent.
-            </p>
+            <p className="text-sm">{t.portal.completeText}</p>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              The more you complete, the better we can match you.
-            </p>
+            <p className="text-sm text-muted-foreground">{t.portal.incompleteText}</p>
           )}
           <Link
             href="/portal/profile"
             className="mt-4 inline-block rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90"
           >
-            {client ? "Edit my profile" : "Start my profile"}
+            {client ? t.portal.editProfile : t.portal.startProfile}
           </Link>
         </div>
       </section>

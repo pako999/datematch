@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 import type { IntroStatus } from "@/db/schema";
 import { advanceIntroduction } from "@/lib/staff/intro-actions";
 import { IntroStatusBadge, cn } from "@/components/ui";
+import { useDict } from "@/components/locale-provider";
+import type { Dict } from "@/lib/i18n/dictionaries";
 
 export interface BoardIntro {
   id: string;
@@ -28,33 +30,36 @@ interface Column {
   hint?: string;
 }
 
-const COLUMNS: Column[] = [
-  { key: "suggested", title: "Suggested", statuses: ["suggested"] },
-  { key: "proposed", title: "Proposed", statuses: ["proposed"], dropTo: "proposed" },
-  {
-    key: "accepted",
-    title: "Accepted",
-    statuses: ["accepted_a", "accepted_b", "both_accepted"],
-    dropTo: "both_accepted",
-    hint: "Drop = both accepted. One-sided yes: open the intro.",
-  },
-  {
-    key: "scheduled",
-    title: "Date scheduled",
-    statuses: ["date_scheduled"],
-    dropTo: "date_scheduled",
-    hint: "Set the exact time on the intro page.",
-  },
-  { key: "met", title: "Met", statuses: ["met"], dropTo: "met" },
-  {
-    key: "closed",
-    title: "Closed",
-    statuses: ["success", "declined", "no_match"],
-    hint: "Close via feedback or on the intro page.",
-  },
-];
+function columns(t: Dict): Column[] {
+  return [
+    { key: "suggested", title: t.staff.colSuggested, statuses: ["suggested"] },
+    { key: "proposed", title: t.staff.colProposed, statuses: ["proposed"], dropTo: "proposed" },
+    {
+      key: "accepted",
+      title: t.staff.colAccepted,
+      statuses: ["accepted_a", "accepted_b", "both_accepted"],
+      dropTo: "both_accepted",
+      hint: t.staff.colAcceptedHint,
+    },
+    {
+      key: "scheduled",
+      title: t.staff.colScheduled,
+      statuses: ["date_scheduled"],
+      dropTo: "date_scheduled",
+      hint: t.staff.colScheduledHint,
+    },
+    { key: "met", title: t.staff.colMet, statuses: ["met"], dropTo: "met" },
+    {
+      key: "closed",
+      title: t.staff.colClosed,
+      statuses: ["success", "declined", "no_match"],
+      hint: t.staff.colClosedHint,
+    },
+  ];
+}
 
 export function IntroBoard({ intros }: { intros: BoardIntro[] }) {
+  const { t } = useDict();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +73,7 @@ export function IntroBoard({ intros }: { intros: BoardIntro[] }) {
     setError(null);
     startTransition(async () => {
       const result = await advanceIntroduction(introId, to);
-      if (!result.ok) setError(result.error ?? "Move not allowed");
+      if (!result.ok) setError(result.error ?? t.staff.moveNotAllowed);
       router.refresh();
     });
   }
@@ -81,7 +86,7 @@ export function IntroBoard({ intros }: { intros: BoardIntro[] }) {
         </p>
       )}
       <div className={cn("grid gap-3 md:grid-cols-3 xl:grid-cols-6", pending && "opacity-60")}>
-        {COLUMNS.map((col) => {
+        {columns(t).map((col) => {
           const cards = intros.filter((i) => col.statuses.includes(i.status));
           return (
             <div
@@ -112,7 +117,7 @@ export function IntroBoard({ intros }: { intros: BoardIntro[] }) {
                       {i.clientAName} × {i.clientBName}
                     </Link>
                     <div className="mt-1 flex items-center justify-between gap-1">
-                      <IntroStatusBadge status={i.status} />
+                      <IntroStatusBadge status={i.status} label={t.introStatus[i.status]} />
                       {i.scheduledFor && (
                         <span className="text-xs text-muted-foreground">
                           {new Date(i.scheduledFor).toLocaleDateString("en-GB", {
@@ -122,7 +127,9 @@ export function IntroBoard({ intros }: { intros: BoardIntro[] }) {
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">by {i.initiatedByName}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t.staff.by} {i.initiatedByName}
+                    </p>
                   </div>
                 ))}
               </div>

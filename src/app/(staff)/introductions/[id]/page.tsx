@@ -16,6 +16,8 @@ import {
 import { QUESTION_RULES } from "@/lib/matching/questions";
 import { ageOn } from "@/lib/matching/score";
 import type { Client } from "@/db/schema";
+import { getI18n } from "@/lib/i18n";
+import { fill, questionLabel, type Dict } from "@/lib/i18n/dictionaries";
 
 function toLocalInputValue(d: Date | null): string | null {
   if (!d) return null;
@@ -24,10 +26,12 @@ function toLocalInputValue(d: Date | null): string | null {
 }
 
 function ProfileCard({
+  t,
   label,
   client,
   intake,
 }: {
+  t: Dict;
   label: string;
   client: Client;
   intake: Record<string, unknown>;
@@ -35,11 +39,11 @@ function ProfileCard({
   return (
     <Card title={`${label} — ${client.fullName}`}>
       <p className="text-sm text-muted-foreground">
-        {ageOn(client.birthdate, new Date())} · {client.gender} · {client.city} ·{" "}
-        {client.membershipTier}
+        {ageOn(client.birthdate, new Date())} · {t.genders[client.gender]} ·{" "}
+        {client.city} · {client.membershipTier}
       </p>
       <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-sm leading-relaxed">
-        {client.bio || "No bio."}
+        {client.bio || t.staff.noBio}
       </p>
       <dl className="mt-3 space-y-1 text-sm">
         {Object.entries(QUESTION_RULES).map(([key, rule]) => {
@@ -47,14 +51,16 @@ function ProfileCard({
           if (value === undefined) return null;
           return (
             <div key={key} className="flex gap-2">
-              <dt className="w-44 shrink-0 text-muted-foreground">{rule.label}</dt>
+              <dt className="w-44 shrink-0 text-muted-foreground">
+                {questionLabel(t, key, rule.label)}
+              </dt>
               <dd>{Array.isArray(value) ? value.join(", ") : String(value)}</dd>
             </div>
           );
         })}
       </dl>
       <Link href={`/clients/${client.id}`} className="mt-3 inline-block text-sm underline">
-        Full profile →
+        {t.staff.fullProfile}
       </Link>
     </Card>
   );
@@ -66,6 +72,7 @@ export default async function IntroDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const staff = await requireStaffPage();
+  const { t } = await getI18n();
   const { id } = await params;
   const detail = await getIntroDetail(id);
   if (!detail) notFound();
@@ -85,22 +92,25 @@ export default async function IntroDetailPage({
             <h1 className="text-xl font-semibold tracking-tight">
               {clientA.fullName} × {clientB.fullName}
             </h1>
-            <IntroStatusBadge status={intro.status} />
+            <IntroStatusBadge status={intro.status} label={t.introStatus[intro.status]} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Initiated by {initiatedByName} · created {formatDateTime(intro.createdAt)}
+            {fill(t.staff.initiatedBy, {
+              name: initiatedByName,
+              date: formatDateTime(intro.createdAt),
+            })}
             {intro.scheduledFor
-              ? ` · date: ${formatDateTime(intro.scheduledFor)}`
+              ? ` · ${t.staff.dateLabel} ${formatDateTime(intro.scheduledFor)}`
               : ""}
           </p>
         </div>
         <Link href="/introductions" className="text-sm hover:underline">
-          ← Pipeline
+          ← {t.staff.pipeline}
         </Link>
       </div>
 
       {writable && (
-        <Card title="Actions">
+        <Card title={t.staff.actionsCard}>
           <TransitionButtons
             introId={intro.id}
             status={intro.status}
@@ -119,8 +129,8 @@ export default async function IntroDetailPage({
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ProfileCard label="Client A" client={clientA} intake={intakeA} />
-        <ProfileCard label="Client B" client={clientB} intake={intakeB} />
+        <ProfileCard t={t} label={t.staff.clientA} client={clientA} intake={intakeA} />
+        <ProfileCard t={t} label={t.staff.clientB} client={clientB} intake={intakeB} />
       </div>
 
       {writable && canLogFeedback && (
@@ -151,15 +161,15 @@ export default async function IntroDetailPage({
       )}
 
       {feedback.length > 0 && !canLogFeedback && (
-        <Card title="Feedback">
+        <Card title={t.staff.feedbackCard}>
           <ul className="space-y-3">
             {feedback.map((f) => {
               const from = f.fromClientId === clientA.id ? clientA : clientB;
               return (
                 <li key={f.id} className="text-sm">
                   <span className="font-medium">{from.fullName}</span>: {f.rating}/5,{" "}
-                  {f.sentiment}
-                  {f.wantsSecondDate ? ", wants a second date" : ""}
+                  {t.sentiment[f.sentiment]}
+                  {f.wantsSecondDate ? `, ${t.staff.wantsSecond}` : ""}
                   {f.notes ? ` — “${f.notes}”` : ""}
                 </li>
               );
@@ -168,9 +178,9 @@ export default async function IntroDetailPage({
         </Card>
       )}
 
-      <Card title="Status history">
+      <Card title={t.staff.statusHistory}>
         {history.length === 0 ? (
-          <EmptyState>No transitions recorded.</EmptyState>
+          <EmptyState>{t.staff.noTransitions}</EmptyState>
         ) : (
           <ol className="space-y-1.5">
             {history.map((h) => (
@@ -178,21 +188,18 @@ export default async function IntroDetailPage({
                 <span className="text-xs text-muted-foreground">
                   {formatDateTime(h.createdAt)}
                 </span>{" "}
-                {h.fromStatus ? `${h.fromStatus} → ` : ""}
-                <span className="font-medium">{h.toStatus}</span>{" "}
-                <span className="text-xs text-muted-foreground">by {h.staffName}</span>
+                {h.fromStatus ? `${t.introStatus[h.fromStatus]} → ` : ""}
+                <span className="font-medium">{t.introStatus[h.toStatus]}</span>{" "}
+                <span className="text-xs text-muted-foreground">
+                  {t.staff.by} {h.staffName}
+                </span>
               </li>
             ))}
           </ol>
         )}
       </Card>
 
-      <p className="text-xs text-muted-foreground">
-        Outcomes are automatic once both sides&apos; feedback is in: both
-        positive → success; any negative → declined and the pair is
-        permanently excluded from future suggestions. Mixed/neutral stays at
-        &ldquo;met&rdquo; for your judgement.
-      </p>
+      <p className="text-xs text-muted-foreground">{t.staff.outcomeNote}</p>
     </div>
   );
 }

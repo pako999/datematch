@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, inArray } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireStaffPage } from "@/lib/auth";
 import { Card, EmptyState, SentimentBadge, formatDateTime } from "@/components/ui";
+import { getI18n } from "@/lib/i18n";
+import { fill, type Dict } from "@/lib/i18n/dictionaries";
 
 export default async function FeedbackPage() {
   await requireStaffPage();
+  const { t } = await getI18n();
 
   const rows = await db()
     .select()
@@ -28,20 +31,20 @@ export default async function FeedbackPage() {
   const negatives = rows.filter((f) => f.sentiment === "negative");
   const rest = rows.filter((f) => f.sentiment !== "negative");
 
-  function FeedbackList({ items }: { items: typeof rows }) {
-    if (items.length === 0) return <EmptyState>Nothing here.</EmptyState>;
+  function FeedbackList({ items, dict }: { items: typeof rows; dict: Dict }) {
+    if (items.length === 0) return <EmptyState>{dict.staff.nothingHere}</EmptyState>;
     return (
       <ul className="divide-y divide-black/5 dark:divide-white/10">
         {items.map((f) => (
           <li key={f.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
-            <SentimentBadge sentiment={f.sentiment} />
+            <SentimentBadge sentiment={f.sentiment} label={dict.sentiment[f.sentiment]} />
             <span className="font-medium">{nameById.get(f.fromClientId) ?? "?"}</span>
-            <span className="text-muted-foreground">about</span>
+            <span className="text-muted-foreground">{dict.staff.on}</span>
             <span className="font-medium">{nameById.get(f.aboutClientId) ?? "?"}</span>
             <span className="text-muted-foreground">· {f.rating}/5</span>
             {f.wantsSecondDate && (
               <span className="text-xs text-emerald-600 dark:text-emerald-400">
-                wants 2nd date
+                {dict.staff.wantsSecond}
               </span>
             )}
             {f.notes && <span className="text-muted-foreground">“{f.notes}”</span>}
@@ -53,7 +56,7 @@ export default async function FeedbackPage() {
                 href={`/introductions/${f.introductionId}`}
                 className="text-xs underline"
               >
-                intro →
+                {dict.staff.intro}
               </Link>
             </span>
           </li>
@@ -64,12 +67,12 @@ export default async function FeedbackPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight">Feedback</h1>
-      <Card title={`Needs follow-up (${negatives.length} negative)`}>
-        <FeedbackList items={negatives} />
+      <h1 className="text-xl font-semibold tracking-tight">{t.staff.navFeedback}</h1>
+      <Card title={fill(t.staff.needsFollowUp, { n: negatives.length })}>
+        <FeedbackList items={negatives} dict={t} />
       </Card>
-      <Card title="Recent feedback">
-        <FeedbackList items={rest} />
+      <Card title={t.staff.recentFeedback}>
+        <FeedbackList items={rest} dict={t} />
       </Card>
     </div>
   );

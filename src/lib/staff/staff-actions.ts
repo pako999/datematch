@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { PENDING_STAFF_PREFIX, requireStaffAction } from "@/lib/auth";
 import { runSeed } from "@/lib/seed-data";
+import { getI18n } from "@/lib/i18n";
 
 export interface ActionResult {
   ok: boolean;
@@ -36,7 +37,10 @@ export async function addStaffMember(
   const existing = await db().query.staff.findFirst({
     where: eq(schema.staff.email, parsed.data.email),
   });
-  if (existing) return { ok: false, error: "That email is already staff" };
+  if (existing) {
+    const { t } = await getI18n();
+    return { ok: false, error: t.staffErrors.emailAlreadyStaff };
+  }
 
   await db().insert(schema.staff).values({
     id: `${PENDING_STAFF_PREFIX}${parsed.data.email}`,
@@ -78,10 +82,8 @@ export async function loadDemoData(
     .select({ count: sql<number>`count(*)::int` })
     .from(schema.clients);
   if ((row?.count ?? 0) > 0) {
-    return {
-      ok: false,
-      error: "The roster isn't empty — demo data only loads into an empty database.",
-    };
+    const { t } = await getI18n();
+    return { ok: false, error: t.staffErrors.rosterNotEmpty };
   }
 
   const summary = await runSeed(db(), { wipe: false });

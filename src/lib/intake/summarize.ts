@@ -46,7 +46,7 @@ export async function generateIntakeSummary(
     .join("\n");
   const noteLines = notes.map((n) => `- ${n.body}`).join("\n");
 
-  const prompt = `You are preparing a concise intake summary for a matchmaking agency's staff console. Based ONLY on the facts below, write 3–5 sentences a matchmaker can skim before a call: who this client is, what they're genuinely looking for, their strongest compatibility signals, and anything a matchmaker should handle with care. Plain text, no preamble, no markdown, no invented facts.
+  const prompt = `You are preparing a concise intake summary for a matchmaking agency's staff console. Based ONLY on the facts below, write 3–5 sentences IN SLOVENIAN (the agency's working language) that a matchmaker can skim before a call: who this client is, what they're genuinely looking for, their strongest compatibility signals, and anything a matchmaker should handle with care. Plain text, no preamble, no markdown, no invented facts.
 
 CLIENT
 Name: ${client.fullName}

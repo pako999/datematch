@@ -99,6 +99,8 @@ export const clients = pgTable(
     birthdate: date("birthdate", { mode: "date" }).notNull(),
     gender: genderEnum("gender").notNull(),
     city: text("city").notNull(),
+    country: text("country").notNull().default("Slovenija"),
+    // Derived from city+country via best-effort geocoding; never staff-entered.
     lat: numeric("lat", { precision: 9, scale: 6, mode: "number" }),
     lng: numeric("lng", { precision: 9, scale: 6, mode: "number" }),
     status: clientStatusEnum("status").notNull().default("lead"),

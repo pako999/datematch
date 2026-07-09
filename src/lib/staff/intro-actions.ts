@@ -113,8 +113,8 @@ export async function proposeIntroduction(
   await notifyAssignedStaff(
     intro!,
     staff,
-    "New introduction proposed",
-    `${staff.name} proposed an introduction involving one of your clients.`,
+    "Predlagana nova predstavitev",
+    `${staff.name} je predlagal/-a predstavitev, ki vključuje eno od vaših strank.`,
   );
   redirect(`/introductions/${intro!.id}`);
 }
@@ -178,8 +178,8 @@ export async function advanceIntroduction(
     await notifyAssignedStaff(
       intro,
       staff,
-      "Both clients accepted",
-      "Both sides said yes — time to schedule the first date.",
+      "Obe stranki sta sprejeli",
+      "Obe strani sta rekli da — čas je za dogovor o prvem zmenku.",
     );
   }
   if (toStatus === "success") {

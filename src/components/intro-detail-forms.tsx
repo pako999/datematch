@@ -11,11 +11,16 @@ import {
   type ActionResult,
 } from "@/lib/staff/intro-actions";
 import { ui } from "@/components/ui";
+import { useDict } from "@/components/locale-provider";
+import { fill } from "@/lib/i18n/dictionaries";
 
 function Status({ state }: { state: ActionResult | null }) {
+  const { t } = useDict();
   if (!state) return null;
   return state.ok ? (
-    <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</span>
+    <span className="text-sm text-emerald-600 dark:text-emerald-400">
+      {t.common.saved}
+    </span>
   ) : (
     <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
   );
@@ -33,6 +38,7 @@ export function TransitionButtons({
   aName: string;
   bName: string;
 }) {
+  const { t } = useDict();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +47,7 @@ export function TransitionButtons({
     setError(null);
     startTransition(async () => {
       const result = await fn();
-      if (!result.ok) setError(result.error ?? "Not allowed");
+      if (!result.ok) setError(result.error ?? t.staff.moveNotAllowed);
       router.refresh();
     });
   }
@@ -51,44 +57,44 @@ export function TransitionButtons({
 
   if (status === "suggested") {
     buttons.push({
-      label: "Propose to clients",
+      label: t.staff.proposeToClients,
       onClick: () => run(() => advanceIntroduction(introId, "proposed")),
     });
   }
   if (acceptable) {
     if (status !== "accepted_a") {
       buttons.push({
-        label: `${aName} accepted`,
+        label: fill(t.staff.acceptedBtn, { name: aName }),
         onClick: () => run(() => recordAcceptance(introId, "a")),
       });
     }
     if (status !== "accepted_b") {
       buttons.push({
-        label: `${bName} accepted`,
+        label: fill(t.staff.acceptedBtn, { name: bName }),
         onClick: () => run(() => recordAcceptance(introId, "b")),
       });
     }
   }
   if (status === "date_scheduled") {
     buttons.push({
-      label: "They met",
+      label: t.staff.theyMet,
       onClick: () => run(() => advanceIntroduction(introId, "met")),
     });
   }
   if (status === "met") {
     buttons.push({
-      label: "Mark success",
+      label: t.staff.markSuccess,
       onClick: () => run(() => advanceIntroduction(introId, "success")),
     });
   }
   if (!["success", "declined", "no_match"].includes(status)) {
     buttons.push({
-      label: "Declined",
+      label: t.staff.declinedBtn,
       danger: true,
       onClick: () => run(() => advanceIntroduction(introId, "declined")),
     });
     buttons.push({
-      label: "No match",
+      label: t.staff.noMatchBtn,
       danger: true,
       onClick: () => run(() => advanceIntroduction(introId, "no_match")),
     });
@@ -122,6 +128,7 @@ export function ScheduleForm({
   introId: string;
   current: string | null; // datetime-local value
 }) {
+  const { t } = useDict();
   const [state, formAction, pending] = useActionState(
     scheduleDate.bind(null, introId),
     null,
@@ -129,7 +136,9 @@ export function ScheduleForm({
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-2">
       <div>
-        <label className={ui.label} htmlFor="scheduledFor">Date &amp; time</label>
+        <label className={ui.label} htmlFor="scheduledFor">
+          {t.staff.dateTime}
+        </label>
         <input
           id="scheduledFor"
           name="scheduledFor"
@@ -139,7 +148,7 @@ export function ScheduleForm({
         />
       </div>
       <button type="submit" disabled={pending} className={ui.btnPrimary}>
-        {pending ? "Saving…" : "Schedule date"}
+        {pending ? t.common.saving : t.staff.scheduleDateBtn}
       </button>
       <Status state={state} />
     </form>
@@ -162,16 +171,21 @@ export function FeedbackForm({
     wantsSecondDate: boolean;
   } | null;
 }) {
+  const { t } = useDict();
   const [state, formAction, pending] = useActionState(
     logFeedback.bind(null, introId, fromClientId),
     null,
   );
   return (
     <form action={formAction} className="space-y-3">
-      <p className="text-sm font-medium">Feedback from {fromName}</p>
+      <p className="text-sm font-medium">
+        {fill(t.staff.feedbackFrom, { name: fromName })}
+      </p>
       <div className="flex flex-wrap gap-3">
         <div>
-          <label className={ui.label} htmlFor={`rating-${fromClientId}`}>Rating (1–5)</label>
+          <label className={ui.label} htmlFor={`rating-${fromClientId}`}>
+            {t.staff.rating}
+          </label>
           <select
             id={`rating-${fromClientId}`}
             name="rating"
@@ -186,7 +200,7 @@ export function FeedbackForm({
           </select>
         </div>
         <div>
-          <span className={ui.label}>Sentiment</span>
+          <span className={ui.label}>{t.staff.sentimentLabel}</span>
           <div className="flex gap-3 pt-1.5">
             {(["positive", "neutral", "negative"] as const).map((s) => (
               <label key={s} className="flex items-center gap-1.5 text-sm">
@@ -197,7 +211,7 @@ export function FeedbackForm({
                   required
                   defaultChecked={existing?.sentiment === s}
                 />
-                {s}
+                {t.sentiment[s]}
               </label>
             ))}
           </div>
@@ -208,19 +222,23 @@ export function FeedbackForm({
             name="wantsSecondDate"
             defaultChecked={existing?.wantsSecondDate}
           />
-          Wants second date
+          {t.staff.wantsSecondDate}
         </label>
       </div>
       <textarea
         name="notes"
         rows={2}
-        placeholder="What did they say?"
+        placeholder={t.staff.whatDidTheySay}
         defaultValue={existing?.notes}
         className={ui.input}
       />
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className={ui.btnPrimary}>
-          {pending ? "Saving…" : existing ? "Update feedback" : "Log feedback"}
+          {pending
+            ? t.common.saving
+            : existing
+              ? t.staff.updateFeedback
+              : t.staff.logFeedback}
         </button>
         <Status state={state} />
       </div>

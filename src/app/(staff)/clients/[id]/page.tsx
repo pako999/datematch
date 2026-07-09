@@ -28,10 +28,13 @@ import {
   ScoreBadge,
   formatDate,
   formatDateTime,
+  scoreTier,
   ui,
 } from "@/components/ui";
 import { QUESTION_RULES } from "@/lib/matching/questions";
 import { ageOn } from "@/lib/matching/score";
+import { getI18n } from "@/lib/i18n";
+import { fill, questionLabel } from "@/lib/i18n/dictionaries";
 
 export default async function ClientDetailPage({
   params,
@@ -39,15 +42,17 @@ export default async function ClientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const staff = await requireStaffPage();
+  const { t } = await getI18n();
   const { id } = await params;
   const detail = await getClientDetail(id);
   if (!detail) notFound();
 
   const { client, assignedStaff, preferences, intake, photos, notes, intros } = detail;
   const writable = canManageClient(staff, client);
-  const suggestions = client.status === "active" && client.consentToIntroduce
-    ? await getSuggestionsForClient(id)
-    : [];
+  const suggestions =
+    client.status === "active" && client.consentToIntroduce
+      ? await getSuggestionsForClient(id)
+      : [];
   if (suggestions.length > 0) {
     capture("suggestions_viewed", staff.id, { clientId: id, count: suggestions.length });
   }
@@ -60,26 +65,26 @@ export default async function ClientDetailPage({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold tracking-tight">{client.fullName}</h1>
-            <ClientStatusBadge status={client.status} />
+            <ClientStatusBadge status={client.status} label={t.clientStatus[client.status]} />
             <span className="text-xs text-muted-foreground">{client.membershipTier}</span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {ageOn(client.birthdate, new Date())} · {client.gender} · {client.city} ·{" "}
-            {client.email}
-            {client.phone ? ` · ${client.phone}` : ""} · Matchmaker:{" "}
-            {assignedStaff?.name ?? "Unassigned"}
-            {client.clerkUserId ? " · self-registered" : ""}
+            {ageOn(client.birthdate, new Date())} · {t.genders[client.gender]} ·{" "}
+            {client.city}, {client.country} · {client.email}
+            {client.phone ? ` · ${client.phone}` : ""} · {t.common.matchmaker}:{" "}
+            {assignedStaff?.name ?? t.common.unassigned}
+            {client.clerkUserId ? ` · ${t.staff.selfRegistered}` : ""}
           </p>
         </div>
         <div className="flex gap-2">
           {writable && (
             <>
               <Link href={`/clients/${id}/edit`} className={ui.btnSecondary}>
-                Edit profile
+                {t.staff.editProfileBtn}
               </Link>
               <form action={recomputeClientScores.bind(null, id)}>
                 <button type="submit" className={ui.btnSecondary}>
-                  Recompute matches
+                  {t.staff.recomputeMatches}
                 </button>
               </form>
             </>
@@ -89,12 +94,12 @@ export default async function ClientDetailPage({
 
       {/* Intake summary */}
       <Card
-        title="Intake summary"
+        title={t.staff.intakeSummary}
         action={
           writable ? (
             <form action={regenerateIntakeSummary.bind(null, id)}>
               <button type="submit" className={ui.btnSecondary}>
-                {client.intakeSummary ? "Regenerate" : "Generate with AI"}
+                {client.intakeSummary ? t.staff.regenerate : t.staff.generateWithAI}
               </button>
             </form>
           ) : undefined
@@ -103,20 +108,18 @@ export default async function ClientDetailPage({
         {client.intakeSummary ? (
           <p className="text-sm leading-relaxed">{client.intakeSummary}</p>
         ) : (
-          <EmptyState>
-            No summary yet. Generate one from the questionnaire, bio, and notes.
-          </EmptyState>
+          <EmptyState>{t.staff.noSummary}</EmptyState>
         )}
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Suggested matches */}
-        <Card title="Suggested matches" className="lg:col-span-2">
+        <Card title={t.staff.suggestedMatches} className="lg:col-span-2">
           {suggestions.length === 0 ? (
             <EmptyState>
               {client.status !== "active" || !client.consentToIntroduce
-                ? "Client must be active with consent before matches are suggested."
-                : "No eligible matches stored yet — try “Recompute matches”."}
+                ? t.staff.noMatchesInactive
+                : t.staff.noMatchesYet}
             </EmptyState>
           ) : (
             <ul className="divide-y divide-black/5 dark:divide-white/10">
@@ -127,13 +130,17 @@ export default async function ClientDetailPage({
                       {s.other.fullName}
                     </Link>
                     <p className="text-xs text-muted-foreground">
-                      {ageOn(s.other.birthdate, new Date())} · {s.other.city} · {s.other.membershipTier}
+                      {ageOn(s.other.birthdate, new Date())} · {s.other.city} ·{" "}
+                      {s.other.membershipTier}
                     </p>
                   </div>
-                  <ScoreBadge score={s.score} />
+                  <ScoreBadge score={s.score} label={t.scoreTiers[scoreTier(s.score).key]} />
                   {s.isStretchPick && (
-                    <span className="rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300" title="Bios resonate strongly despite a lower structured score — a matchmaker's wildcard.">
-                      Wildcard
+                    <span
+                      className="rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300"
+                      title={t.scoreTiers.wildcardTitle}
+                    >
+                      {t.scoreTiers.wildcard}
                     </span>
                   )}
                   <div className="min-w-0 flex-1 basis-64">
@@ -141,23 +148,27 @@ export default async function ClientDetailPage({
                       <p className="text-sm text-muted-foreground">{s.rationale}</p>
                     ) : writable ? (
                       <form action={generateRationaleAction.bind(null, s.scoreId, id)}>
-                        <button type="submit" className="text-xs underline text-muted-foreground hover:text-foreground">
-                          Generate AI rationale
+                        <button
+                          type="submit"
+                          className="text-xs text-muted-foreground underline hover:text-foreground"
+                        >
+                          {t.staff.generateRationale}
                         </button>
                       </form>
                     ) : null}
                   </div>
-                  {writable && (
-                    s.hasOpenIntro ? (
-                      <span className="text-xs text-muted-foreground">Intro in progress</span>
+                  {writable &&
+                    (s.hasOpenIntro ? (
+                      <span className="text-xs text-muted-foreground">
+                        {t.staff.introInProgress}
+                      </span>
                     ) : (
                       <form action={proposeIntroduction.bind(null, id, s.other.id)}>
                         <button type="submit" className={ui.btnPrimary}>
-                          Propose introduction
+                          {t.staff.proposeIntroduction}
                         </button>
                       </form>
-                    )
-                  )}
+                    ))}
                 </li>
               ))}
             </ul>
@@ -165,39 +176,47 @@ export default async function ClientDetailPage({
         </Card>
 
         {/* Preferences */}
-        <Card title="Preferences">
+        <Card title={t.staff.preferences}>
           {preferences ? (
             <dl className="space-y-1.5 text-sm">
               <div className="flex gap-2">
-                <dt className="w-32 text-muted-foreground">Interested in</dt>
-                <dd>{preferences.interestedInGenders.join(", ")}</dd>
+                <dt className="w-32 text-muted-foreground">{t.staff.interestedIn}</dt>
+                <dd>
+                  {preferences.interestedInGenders
+                    .map((g) => t.genders[g])
+                    .join(", ")}
+                </dd>
               </div>
               <div className="flex gap-2">
-                <dt className="w-32 text-muted-foreground">Age range</dt>
+                <dt className="w-32 text-muted-foreground">{t.staff.ageRange}</dt>
                 <dd>{preferences.minAge}–{preferences.maxAge}</dd>
               </div>
               <div className="flex gap-2">
-                <dt className="w-32 text-muted-foreground">Max distance</dt>
-                <dd>{preferences.maxDistanceKm ? `${preferences.maxDistanceKm} km` : "No limit"}</dd>
+                <dt className="w-32 text-muted-foreground">{t.staff.maxDistanceLabel}</dt>
+                <dd>
+                  {preferences.maxDistanceKm
+                    ? `${preferences.maxDistanceKm} km`
+                    : t.portal.noLimit}
+                </dd>
               </div>
               <div className="flex gap-2">
-                <dt className="w-32 text-muted-foreground">Dealbreakers</dt>
+                <dt className="w-32 text-muted-foreground">{t.staff.dealbreakers}</dt>
                 <dd className="font-mono text-xs">{JSON.stringify(preferences.dealbreakers)}</dd>
               </div>
               <div className="flex gap-2">
-                <dt className="w-32 text-muted-foreground">Must-haves</dt>
+                <dt className="w-32 text-muted-foreground">{t.staff.mustHaves}</dt>
                 <dd className="font-mono text-xs">{JSON.stringify(preferences.mustHaves)}</dd>
               </div>
             </dl>
           ) : (
-            <EmptyState>No preferences yet.</EmptyState>
+            <EmptyState>{t.staff.noPreferences}</EmptyState>
           )}
         </Card>
 
         {/* Questionnaire */}
-        <Card title="Questionnaire">
+        <Card title={t.staff.questionnaire}>
           {Object.keys(intake).length === 0 ? (
-            <EmptyState>Not completed.</EmptyState>
+            <EmptyState>{t.staff.notCompleted}</EmptyState>
           ) : (
             <dl className="space-y-1.5 text-sm">
               {Object.entries(QUESTION_RULES).map(([key, rule]) => {
@@ -205,7 +224,9 @@ export default async function ClientDetailPage({
                 if (value === undefined) return null;
                 return (
                   <div key={key} className="flex gap-2">
-                    <dt className="w-48 shrink-0 text-muted-foreground">{rule.label}</dt>
+                    <dt className="w-48 shrink-0 text-muted-foreground">
+                      {questionLabel(t, key, rule.label)}
+                    </dt>
                     <dd>{Array.isArray(value) ? value.join(", ") : String(value)}</dd>
                   </div>
                 );
@@ -215,18 +236,18 @@ export default async function ClientDetailPage({
         </Card>
 
         {/* Bio */}
-        <Card title="Bio">
+        <Card title={t.staff.bio}>
           {client.bio ? (
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{client.bio}</p>
           ) : (
-            <EmptyState>No bio.</EmptyState>
+            <EmptyState>{t.staff.noBio}</EmptyState>
           )}
         </Card>
 
         {/* Photos (staff-only, private) */}
-        <Card title="Photos (private)">
+        <Card title={t.staff.photosPrivate}>
           {photos.length === 0 ? (
-            <EmptyState>No photos.</EmptyState>
+            <EmptyState>{t.staff.noPhotos}</EmptyState>
           ) : (
             <div className="flex flex-wrap gap-2">
               {photos.map((p) => (
@@ -234,12 +255,16 @@ export default async function ClientDetailPage({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={p.url}
-                    alt={`${client.fullName}${p.isPrimary ? " (primary)" : ""}`}
+                    alt={client.fullName}
                     className="h-28 w-28 rounded-md object-cover"
                   />
                   {writable && (
                     <form action={deleteClientPhoto.bind(null, id, p.id)} className="absolute right-1 top-1">
-                      <button type="submit" className="rounded bg-black/60 px-1.5 text-xs text-white" title="Remove photo">
+                      <button
+                        type="submit"
+                        className="rounded bg-black/60 px-1.5 text-xs text-white"
+                        title={t.common.remove}
+                      >
                         ×
                       </button>
                     </form>
@@ -252,24 +277,24 @@ export default async function ClientDetailPage({
             <div className="mt-3 space-y-2">
               <StaffPhotoUploadForm action={uploadClientPhoto.bind(null, id)} />
               <form action={addClientPhoto.bind(null, id)} className="flex gap-2">
-                <input name="url" placeholder="or paste an https image URL" className={ui.input} />
-                <button type="submit" className={ui.btnSecondary}>Add URL</button>
+                <input name="url" placeholder={t.staff.orPasteUrl} className={ui.input} />
+                <button type="submit" className={ui.btnSecondary}>{t.staff.addUrl}</button>
               </form>
             </div>
           )}
         </Card>
 
         {/* Introductions */}
-        <Card title="Introductions">
+        <Card title={t.staff.introductions}>
           {intros.length === 0 ? (
-            <EmptyState>No introductions yet.</EmptyState>
+            <EmptyState>{t.staff.noIntros}</EmptyState>
           ) : (
             <ul className="space-y-2 text-sm">
               {intros.map((i) => (
                 <li key={i.id} className="flex items-center gap-2">
-                  <IntroStatusBadge status={i.status} />
+                  <IntroStatusBadge status={i.status} label={t.introStatus[i.status]} />
                   <Link href={`/introductions/${i.id}`} className="hover:underline">
-                    with {i.otherName}
+                    {t.staff.with} {i.otherName}
                   </Link>
                   <span className="text-xs text-muted-foreground">{formatDate(i.updatedAt)}</span>
                 </li>
@@ -279,15 +304,15 @@ export default async function ClientDetailPage({
         </Card>
 
         {/* Notes timeline */}
-        <Card title="Notes" className="lg:col-span-2">
+        <Card title={t.staff.notes} className="lg:col-span-2">
           {writable && (
             <form action={addClientNote.bind(null, id)} className="mb-3 flex gap-2">
-              <input name="body" placeholder="Add a note…" className={ui.input} />
-              <button type="submit" className={ui.btnSecondary}>Add</button>
+              <input name="body" placeholder={t.staff.addNote} className={ui.input} />
+              <button type="submit" className={ui.btnSecondary}>{t.common.add}</button>
             </form>
           )}
           {notes.length === 0 ? (
-            <EmptyState>No notes yet.</EmptyState>
+            <EmptyState>{t.staff.noNotes}</EmptyState>
           ) : (
             <ul className="space-y-2">
               {notes.map((n) => (
@@ -303,7 +328,7 @@ export default async function ClientDetailPage({
         </Card>
 
         {/* Management */}
-        <Card title="Management" className="lg:col-span-2">
+        <Card title={t.staff.management} className="lg:col-span-2">
           {writable ? (
             <StaffManagementForm
               action={updateClientManagement.bind(null, id)}
@@ -318,27 +343,26 @@ export default async function ClientDetailPage({
                 .map((s) => ({ id: s.id, name: s.name }))}
             />
           ) : (
-            <EmptyState>Read-only access.</EmptyState>
+            <EmptyState>{t.staff.readonlyAccess}</EmptyState>
           )}
           {staff.role === "admin" && (
             <details className="mt-4">
               <summary className="cursor-pointer text-sm text-red-600 dark:text-red-400">
-                Danger zone: permanently delete (GDPR)
+                {t.staff.dangerZone}
               </summary>
               <form action={deleteClientHard.bind(null, id)} className="mt-2 flex gap-2">
                 <input
                   name="confirmName"
-                  placeholder={`Type "${client.fullName}" to confirm`}
+                  placeholder={fill(t.staff.deleteConfirmPlaceholder, {
+                    name: client.fullName,
+                  })}
                   className={ui.input}
                 />
                 <button type="submit" className={ui.btnDanger}>
-                  Delete forever
+                  {t.staff.deleteForever}
                 </button>
               </form>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Removes the client and cascades to scores, introductions,
-                feedback, notes, and photos. This cannot be undone.
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{t.staff.deleteNote}</p>
             </details>
           )}
         </Card>

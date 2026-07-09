@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getMyProfile } from "@/lib/portal/data";
 import { deleteMyPhoto } from "@/lib/portal/actions";
+import { getI18n } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   BasicsForm,
   ConsentForm,
@@ -42,6 +44,7 @@ export default async function ProfilePage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
+  const { t } = await getI18n();
   const { client, preferences, intake, photos } = await getMyProfile();
 
   const basicsInitial: BasicsInitial | null = client
@@ -51,6 +54,7 @@ export default async function ProfilePage() {
         birthdate: client.birthdate.toISOString().slice(0, 10),
         gender: client.gender,
         city: client.city,
+        country: client.country,
         bio: client.bio,
       }
     : null;
@@ -73,37 +77,37 @@ export default async function ProfilePage() {
     : null;
 
   const locked = !client;
+  const lockedDesc = locked ? t.portal.sectionLocked : undefined;
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-6 sm:p-10">
       <header className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My profile</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Everything here is only visible to you and your matchmaker.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t.portal.myProfile}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t.portal.privacyNote}</p>
         </div>
-        <Link href="/portal" className="text-sm hover:underline">
-          ← Overview
-        </Link>
+        <span className="flex items-center gap-4">
+          <LanguageSwitcher />
+          <Link href="/portal" className="text-sm hover:underline">
+            ← {t.portal.overview}
+          </Link>
+        </span>
       </header>
 
       <Section
         id="basics"
-        title="Basic details"
-        description="Who you are and how we can reach you."
+        title={t.portal.sectionBasicsTitle}
+        description={t.portal.sectionBasicsDesc}
       >
         <BasicsForm initial={basicsInitial} />
       </Section>
 
       <Section
         id="photos"
-        title="Photos"
-        description={
-          locked
-            ? "Save your basic details first to unlock this section."
-            : "Only your matchmaker sees these — they're never public. A clear, recent photo helps a lot."
-        }
+        title={t.portal.sectionPhotosTitle}
+        description={lockedDesc ?? t.portal.sectionPhotosDesc}
       >
         {photos.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
@@ -112,14 +116,14 @@ export default async function ProfilePage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={p.url}
-                  alt={p.isPrimary ? "Your primary photo" : "Your photo"}
+                  alt={p.isPrimary ? t.portal.yourPrimaryPhoto : t.portal.yourPhoto}
                   className="h-28 w-28 rounded-md object-cover"
                 />
                 <form action={deleteMyPhoto.bind(null, p.id)} className="absolute right-1 top-1">
                   <button
                     type="submit"
                     className="rounded bg-black/60 px-1.5 text-xs text-white"
-                    title="Remove photo"
+                    title={t.portal.removePhoto}
                   >
                     ×
                   </button>
@@ -133,36 +137,24 @@ export default async function ProfilePage() {
 
       <Section
         id="preferences"
-        title="Match preferences"
-        description={
-          locked
-            ? "Save your basic details first to unlock this section."
-            : "Who you'd like us to look for."
-        }
+        title={t.portal.sectionPreferencesTitle}
+        description={lockedDesc ?? t.portal.sectionPreferencesDesc}
       >
         <PreferencesForm initial={preferencesInitial} disabled={locked} />
       </Section>
 
       <Section
         id="questionnaire"
-        title="Compatibility questionnaire"
-        description={
-          locked
-            ? "Save your basic details first to unlock this section."
-            : "There are no right answers — honest ones make the best matches. You can skip any question."
-        }
+        title={t.portal.sectionQuestionnaireTitle}
+        description={lockedDesc ?? t.portal.sectionQuestionnaireDesc}
       >
         <QuestionnaireForm initial={intake} disabled={locked} />
       </Section>
 
       <Section
         id="consent"
-        title="Consent"
-        description={
-          locked
-            ? "Save your basic details first to unlock this section."
-            : "We never introduce you to anyone without this."
-        }
+        title={t.portal.sectionConsentTitle}
+        description={lockedDesc ?? t.portal.sectionConsentDesc}
       >
         <ConsentForm
           initial={Boolean(client?.consentToIntroduce)}

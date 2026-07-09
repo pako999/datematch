@@ -10,42 +10,49 @@ import {
   type ActionResult,
 } from "@/lib/portal/actions";
 import { QUESTION_RULES } from "@/lib/matching/questions";
-
-/* ------------------------------------------------------------------ */
-/* Shared bits                                                         */
-/* ------------------------------------------------------------------ */
-
-const GENDER_OPTIONS = [
-  { value: "woman", label: "Woman" },
-  { value: "man", label: "Man" },
-  { value: "nonbinary", label: "Non-binary" },
-  { value: "other", label: "Other" },
-] as const;
+import { useDict } from "@/components/locale-provider";
+import {
+  questionAnchors,
+  questionLabel,
+  questionOption,
+} from "@/lib/i18n/dictionaries";
 
 const inputCls =
   "w-full rounded-md border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50";
 const labelCls = "block text-sm font-medium";
 const fieldCls = "space-y-1.5";
 
-function SaveButton({ pending, label }: { pending: boolean; label?: string }) {
+function SaveButton({ pending, label }: { pending: boolean; label: string }) {
+  const { t } = useDict();
   return (
     <button
       type="submit"
       disabled={pending}
       className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
     >
-      {pending ? "Saving…" : (label ?? "Save")}
+      {pending ? t.common.saving : label}
     </button>
   );
 }
 
 function FormStatus({ state }: { state: ActionResult | null }) {
+  const { t } = useDict();
   if (!state) return null;
   return state.ok ? (
-    <p className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</p>
+    <p className="text-sm text-emerald-600 dark:text-emerald-400">{t.common.saved}</p>
   ) : (
     <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
   );
+}
+
+function useGenderOptions() {
+  const { t } = useDict();
+  return [
+    { value: "woman", label: t.genders.woman, plural: t.genders.women },
+    { value: "man", label: t.genders.man, plural: t.genders.men },
+    { value: "nonbinary", label: t.genders.nonbinary, plural: t.genders.nonbinaryPl },
+    { value: "other", label: t.genders.other, plural: t.genders.otherPl },
+  ] as const;
 }
 
 /* ------------------------------------------------------------------ */
@@ -58,10 +65,13 @@ export interface BasicsInitial {
   birthdate: string; // yyyy-mm-dd
   gender: string;
   city: string;
+  country: string;
   bio: string;
 }
 
 export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
+  const { t } = useDict();
+  const genders = useGenderOptions();
   const [state, action, pending] = useActionState(saveBasics, null);
 
   return (
@@ -69,7 +79,7 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className={fieldCls}>
           <label htmlFor="fullName" className={labelCls}>
-            Full name
+            {t.common.fullName}
           </label>
           <input
             id="fullName"
@@ -82,7 +92,8 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
         </div>
         <div className={fieldCls}>
           <label htmlFor="phone" className={labelCls}>
-            Phone <span className="text-muted-foreground">(optional)</span>
+            {t.common.phone}{" "}
+            <span className="text-muted-foreground">{t.common.optional}</span>
           </label>
           <input
             id="phone"
@@ -94,7 +105,7 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
         </div>
         <div className={fieldCls}>
           <label htmlFor="birthdate" className={labelCls}>
-            Date of birth
+            {t.common.birthdate}
           </label>
           <input
             id="birthdate"
@@ -107,7 +118,7 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
         </div>
         <div className={fieldCls}>
           <label htmlFor="gender" className={labelCls}>
-            Gender
+            {t.common.gender}
           </label>
           <select
             id="gender"
@@ -117,18 +128,18 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
             className={inputCls}
           >
             <option value="" disabled>
-              Select…
+              {t.common.select}
             </option>
-            {GENDER_OPTIONS.map((o) => (
+            {genders.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
           </select>
         </div>
-        <div className={`${fieldCls} sm:col-span-2`}>
+        <div className={fieldCls}>
           <label htmlFor="city" className={labelCls}>
-            City
+            {t.common.city}
           </label>
           <input
             id="city"
@@ -139,16 +150,25 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
             autoComplete="address-level2"
           />
         </div>
+        <div className={fieldCls}>
+          <label htmlFor="country" className={labelCls}>
+            {t.common.country}
+          </label>
+          <input
+            id="country"
+            name="country"
+            required
+            defaultValue={initial?.country ?? "Slovenija"}
+            className={inputCls}
+            autoComplete="country-name"
+          />
+        </div>
       </div>
       <div className={fieldCls}>
         <label htmlFor="bio" className={labelCls}>
-          About you
+          {t.portal.aboutYou}
         </label>
-        <p className="text-xs text-muted-foreground">
-          Tell us about yourself in your own words — your lifestyle, what
-          matters to you, and what you&apos;re looking for. Your matchmaker
-          reads this, and it genuinely improves your matches.
-        </p>
+        <p className="text-xs text-muted-foreground">{t.portal.aboutYouHint}</p>
         <textarea
           id="bio"
           name="bio"
@@ -158,7 +178,7 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
         />
       </div>
       <div className="flex items-center gap-4">
-        <SaveButton pending={pending} label="Save details" />
+        <SaveButton pending={pending} label={t.portal.saveDetails} />
         <FormStatus state={state} />
       </div>
     </form>
@@ -185,15 +205,17 @@ export function PreferencesForm({
   initial: PreferencesInitial | null;
   disabled: boolean;
 }) {
+  const { t } = useDict();
+  const genders = useGenderOptions();
   const [state, action, pending] = useActionState(savePreferences, null);
 
   return (
     <form action={action} className="space-y-4">
       <fieldset disabled={disabled} className="space-y-4 disabled:opacity-50">
         <div className={fieldCls}>
-          <span className={labelCls}>I&apos;d like to meet</span>
+          <span className={labelCls}>{t.portal.likeToMeet}</span>
           <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
-            {GENDER_OPTIONS.map((o) => (
+            {genders.map((o) => (
               <label key={o.value} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -201,7 +223,7 @@ export function PreferencesForm({
                   value={o.value}
                   defaultChecked={initial?.interestedInGenders.includes(o.value)}
                 />
-                {o.label === "Woman" ? "Women" : o.label === "Man" ? "Men" : o.label}
+                {o.plural}
               </label>
             ))}
           </div>
@@ -209,7 +231,7 @@ export function PreferencesForm({
         <div className="grid gap-4 sm:grid-cols-3">
           <div className={fieldCls}>
             <label htmlFor="minAge" className={labelCls}>
-              Age from
+              {t.portal.ageFrom}
             </label>
             <input
               id="minAge"
@@ -224,7 +246,7 @@ export function PreferencesForm({
           </div>
           <div className={fieldCls}>
             <label htmlFor="maxAge" className={labelCls}>
-              Age to
+              {t.portal.ageTo}
             </label>
             <input
               id="maxAge"
@@ -239,7 +261,7 @@ export function PreferencesForm({
           </div>
           <div className={fieldCls}>
             <label htmlFor="maxDistanceKm" className={labelCls}>
-              Max distance (km)
+              {t.portal.maxDistance}
             </label>
             <input
               id="maxDistanceKm"
@@ -247,7 +269,7 @@ export function PreferencesForm({
               type="number"
               min={1}
               max={1000}
-              placeholder="No limit"
+              placeholder={t.portal.noLimit}
               defaultValue={initial?.maxDistanceKm ?? ""}
               className={inputCls}
             />
@@ -260,7 +282,7 @@ export function PreferencesForm({
               name="noSmokers"
               defaultChecked={initial?.noSmokers}
             />
-            Please don&apos;t match me with smokers
+            {t.portal.noSmokers}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -268,15 +290,12 @@ export function PreferencesForm({
               name="partnerMustWantChildren"
               defaultChecked={initial?.partnerMustWantChildren}
             />
-            My partner should want children
+            {t.portal.partnerMustWantChildren}
           </label>
-          <p className="text-xs text-muted-foreground">
-            Anything more specific? Mention it in “About you” — your
-            matchmaker can set further requirements with you.
-          </p>
+          <p className="text-xs text-muted-foreground">{t.portal.moreSpecificHint}</p>
         </div>
         <div className="flex items-center gap-4">
-          <SaveButton pending={pending} label="Save preferences" />
+          <SaveButton pending={pending} label={t.portal.savePreferences} />
           <FormStatus state={state} />
         </div>
       </fieldset>
@@ -295,6 +314,7 @@ export function QuestionnaireForm({
   initial: Record<string, unknown>;
   disabled: boolean;
 }) {
+  const { t } = useDict();
   const [state, action, pending] = useActionState(saveQuestionnaire, null);
 
   return (
@@ -302,16 +322,18 @@ export function QuestionnaireForm({
       <fieldset disabled={disabled} className="space-y-6 disabled:opacity-50">
         {Object.entries(QUESTION_RULES).map(([key, rule]) => {
           const value = initial[key];
+          const label = questionLabel(t, key, rule.label);
 
           if (rule.type === "similarity" || rule.type === "complementarity") {
             const min = rule.scaleMin ?? 1;
             const max = rule.scaleMax ?? 5;
+            const anchors = questionAnchors(t, key, rule.anchors);
             const points = Array.from({ length: max - min + 1 }, (_, i) => min + i);
             return (
               <div key={key} className={fieldCls}>
-                <span className={labelCls}>{rule.label}</span>
+                <span className={labelCls}>{label}</span>
                 <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
-                  <span className="w-24 text-right">{rule.anchors?.[0]}</span>
+                  <span className="w-24 text-right">{anchors?.[0]}</span>
                   <div className="flex gap-4">
                     {points.map((p) => (
                       <label key={p} className="flex flex-col items-center gap-1">
@@ -325,7 +347,7 @@ export function QuestionnaireForm({
                       </label>
                     ))}
                   </div>
-                  <span className="w-24">{rule.anchors?.[1]}</span>
+                  <span className="w-24">{anchors?.[1]}</span>
                 </div>
               </div>
             );
@@ -334,7 +356,7 @@ export function QuestionnaireForm({
           if (rule.type === "exact") {
             return (
               <div key={key} className={fieldCls}>
-                <span className={labelCls}>{rule.label}</span>
+                <span className={labelCls}>{label}</span>
                 <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
                   {rule.options?.map((o) => (
                     <label key={o.value} className="flex items-center gap-2 text-sm">
@@ -344,7 +366,7 @@ export function QuestionnaireForm({
                         value={o.value}
                         defaultChecked={value === o.value}
                       />
-                      {o.label}
+                      {questionOption(t, key, o.value, o.label)}
                     </label>
                   ))}
                 </div>
@@ -352,11 +374,10 @@ export function QuestionnaireForm({
             );
           }
 
-          // overlap → multi-select checkboxes
           const selected = Array.isArray(value) ? (value as string[]) : [];
           return (
             <div key={key} className={fieldCls}>
-              <span className={labelCls}>{rule.label}</span>
+              <span className={labelCls}>{label}</span>
               <div className="grid grid-cols-2 gap-x-5 gap-y-2 pt-1 sm:grid-cols-3">
                 {rule.options?.map((o) => (
                   <label key={o.value} className="flex items-center gap-2 text-sm">
@@ -366,7 +387,7 @@ export function QuestionnaireForm({
                       value={o.value}
                       defaultChecked={selected.includes(o.value)}
                     />
-                    {o.label}
+                    {questionOption(t, key, o.value, o.label)}
                   </label>
                 ))}
               </div>
@@ -374,7 +395,7 @@ export function QuestionnaireForm({
           );
         })}
         <div className="flex items-center gap-4">
-          <SaveButton pending={pending} label="Save answers" />
+          <SaveButton pending={pending} label={t.portal.saveAnswers} />
           <FormStatus state={state} />
         </div>
       </fieldset>
@@ -387,13 +408,15 @@ export function QuestionnaireForm({
 /* ------------------------------------------------------------------ */
 
 export function PhotoUploadForm({ disabled }: { disabled: boolean }) {
+  const { t } = useDict();
   const [state, action, pending] = useActionState(uploadMyPhoto, null);
   return (
     <form action={action} className="space-y-3">
       <fieldset disabled={disabled} className="space-y-3 disabled:opacity-50">
         <div className={fieldCls}>
           <label htmlFor="photo" className={labelCls}>
-            Add a photo <span className="text-muted-foreground">(JPEG, PNG or WebP, max 5 MB)</span>
+            {t.portal.addPhoto}{" "}
+            <span className="text-muted-foreground">{t.portal.photoTypes}</span>
           </label>
           <input
             id="photo"
@@ -405,7 +428,7 @@ export function PhotoUploadForm({ disabled }: { disabled: boolean }) {
           />
         </div>
         <div className="flex items-center gap-4">
-          <SaveButton pending={pending} label="Upload photo" />
+          <SaveButton pending={pending} label={t.portal.uploadPhoto} />
           <FormStatus state={state} />
         </div>
       </fieldset>
@@ -424,6 +447,7 @@ export function ConsentForm({
   initial: boolean;
   disabled: boolean;
 }) {
+  const { t } = useDict();
   const [state, action, pending] = useActionState(saveConsent, null);
 
   return (
@@ -436,15 +460,10 @@ export function ConsentForm({
             defaultChecked={initial}
             className="mt-0.5"
           />
-          <span>
-            I consent to the agency considering me for introductions and
-            sharing my profile (excluding contact details) with potential
-            matches. I can withdraw this at any time by unticking this box or
-            contacting the agency.
-          </span>
+          <span>{t.portal.consentLabel}</span>
         </label>
         <div className="flex items-center gap-4">
-          <SaveButton pending={pending} label="Save consent" />
+          <SaveButton pending={pending} label={t.portal.saveConsent} />
           <FormStatus state={state} />
         </div>
       </fieldset>

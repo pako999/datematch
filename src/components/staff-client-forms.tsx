@@ -4,26 +4,38 @@ import { useActionState } from "react";
 import { ui } from "@/components/ui";
 import { QUESTION_RULES } from "@/lib/matching/questions";
 import type { ActionResult } from "@/lib/staff/actions";
+import { useDict } from "@/components/locale-provider";
+import {
+  questionAnchors,
+  questionLabel,
+  questionOption,
+} from "@/lib/i18n/dictionaries";
 
 type BoundAction = (
   prev: ActionResult | null,
   formData: FormData,
 ) => Promise<ActionResult>;
 
-const GENDERS = [
-  { value: "woman", label: "Woman" },
-  { value: "man", label: "Man" },
-  { value: "nonbinary", label: "Non-binary" },
-  { value: "other", label: "Other" },
-] as const;
-
 function Status({ state }: { state: ActionResult | null }) {
+  const { t } = useDict();
   if (!state) return null;
   return state.ok ? (
-    <span className="text-sm text-emerald-600 dark:text-emerald-400">Saved.</span>
+    <span className="text-sm text-emerald-600 dark:text-emerald-400">
+      {t.common.saved}
+    </span>
   ) : (
     <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
   );
+}
+
+function useGenders() {
+  const { t } = useDict();
+  return [
+    { value: "woman", label: t.genders.woman },
+    { value: "man", label: t.genders.man },
+    { value: "nonbinary", label: t.genders.nonbinary },
+    { value: "other", label: t.genders.other },
+  ] as const;
 }
 
 /* ------------------------------------------------------------------ */
@@ -37,8 +49,7 @@ export interface StaffBasicsInitial {
   birthdate: string;
   gender: string;
   city: string;
-  lat: string;
-  lng: string;
+  country: string;
   bio: string;
 }
 
@@ -51,55 +62,53 @@ export function StaffBasicsForm({
   initial: StaffBasicsInitial | null;
   submitLabel: string;
 }) {
+  const { t } = useDict();
+  const genders = useGenders();
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <form action={formAction} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className={ui.label} htmlFor="fullName">Full name</label>
+          <label className={ui.label} htmlFor="fullName">{t.common.fullName}</label>
           <input id="fullName" name="fullName" required defaultValue={initial?.fullName} className={ui.input} />
         </div>
         <div>
-          <label className={ui.label} htmlFor="email">Email</label>
+          <label className={ui.label} htmlFor="email">{t.common.email}</label>
           <input id="email" name="email" type="email" required defaultValue={initial?.email} className={ui.input} />
         </div>
         <div>
-          <label className={ui.label} htmlFor="phone">Phone</label>
+          <label className={ui.label} htmlFor="phone">{t.common.phone}</label>
           <input id="phone" name="phone" defaultValue={initial?.phone} className={ui.input} />
         </div>
         <div>
-          <label className={ui.label} htmlFor="birthdate">Birthdate</label>
+          <label className={ui.label} htmlFor="birthdate">{t.common.birthdate}</label>
           <input id="birthdate" name="birthdate" type="date" required defaultValue={initial?.birthdate} className={ui.input} />
         </div>
         <div>
-          <label className={ui.label} htmlFor="gender">Gender</label>
+          <label className={ui.label} htmlFor="gender">{t.common.gender}</label>
           <select id="gender" name="gender" required defaultValue={initial?.gender ?? ""} className={ui.input}>
-            <option value="" disabled>Select…</option>
-            {GENDERS.map((g) => (
+            <option value="" disabled>{t.common.select}</option>
+            {genders.map((g) => (
               <option key={g.value} value={g.value}>{g.label}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className={ui.label} htmlFor="city">City</label>
+          <label className={ui.label} htmlFor="city">{t.common.city}</label>
           <input id="city" name="city" required defaultValue={initial?.city} className={ui.input} />
         </div>
         <div>
-          <label className={ui.label} htmlFor="lat">Latitude (optional)</label>
-          <input id="lat" name="lat" defaultValue={initial?.lat} className={ui.input} placeholder="46.0569" />
-        </div>
-        <div>
-          <label className={ui.label} htmlFor="lng">Longitude (optional)</label>
-          <input id="lng" name="lng" defaultValue={initial?.lng} className={ui.input} placeholder="14.5058" />
+          <label className={ui.label} htmlFor="country">{t.common.country}</label>
+          <input id="country" name="country" required defaultValue={initial?.country ?? "Slovenija"} className={ui.input} />
         </div>
       </div>
       <div>
-        <label className={ui.label} htmlFor="bio">Bio (client&apos;s own words — drives semantic matching)</label>
+        <label className={ui.label} htmlFor="bio">{t.staff.bioLabel}</label>
         <textarea id="bio" name="bio" rows={4} defaultValue={initial?.bio} className={ui.input} />
       </div>
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className={ui.btnPrimary}>
-          {pending ? "Saving…" : submitLabel}
+          {pending ? t.common.saving : submitLabel}
         </button>
         <Status state={state} />
       </div>
@@ -125,30 +134,31 @@ export function StaffManagementForm({
   };
   staffOptions: { id: string; name: string }[];
 }) {
+  const { t } = useDict();
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <form action={formAction} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
-          <label className={ui.label} htmlFor="status">Status</label>
+          <label className={ui.label} htmlFor="status">{t.common.status}</label>
           <select id="status" name="status" defaultValue={initial.status} className={ui.input}>
-            {["lead", "active", "paused", "matched", "churned"].map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {(["lead", "active", "paused", "matched", "churned"] as const).map((s) => (
+              <option key={s} value={s}>{t.clientStatus[s]}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className={ui.label} htmlFor="membershipTier">Tier</label>
+          <label className={ui.label} htmlFor="membershipTier">{t.common.tier}</label>
           <select id="membershipTier" name="membershipTier" defaultValue={initial.membershipTier} className={ui.input}>
-            {["standard", "premium", "elite"].map((t) => (
-              <option key={t} value={t}>{t}</option>
+            {["standard", "premium", "elite"].map((tier) => (
+              <option key={tier} value={tier}>{tier}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className={ui.label} htmlFor="assignedStaffId">Assigned to</label>
+          <label className={ui.label} htmlFor="assignedStaffId">{t.staff.assignedTo}</label>
           <select id="assignedStaffId" name="assignedStaffId" defaultValue={initial.assignedStaffId} className={ui.input}>
-            <option value="">Unassigned</option>
+            <option value="">{t.common.unassigned}</option>
             {staffOptions.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -157,11 +167,11 @@ export function StaffManagementForm({
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="consentToIntroduce" defaultChecked={initial.consentToIntroduce} />
-        Consent to introductions (required before appearing in any shortlist)
+        {t.staff.consentCheckbox}
       </label>
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className={ui.btnPrimary}>
-          {pending ? "Saving…" : "Save"}
+          {pending ? t.common.saving : t.common.save}
         </button>
         <Status state={state} />
       </div>
@@ -187,13 +197,15 @@ export function StaffPreferencesForm({
     mustHavesJson: string;
   } | null;
 }) {
+  const { t } = useDict();
+  const genders = useGenders();
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <span className={ui.label}>Interested in</span>
+        <span className={ui.label}>{t.staff.interestedIn}</span>
         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
-          {GENDERS.map((g) => (
+          {genders.map((g) => (
             <label key={g.value} className="flex items-center gap-1.5 text-sm">
               <input
                 type="checkbox"
@@ -208,22 +220,20 @@ export function StaffPreferencesForm({
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
-          <label className={ui.label} htmlFor="minAge">Min age</label>
+          <label className={ui.label} htmlFor="minAge">{t.staff.minAgeLabel}</label>
           <input id="minAge" name="minAge" type="number" min={18} max={99} required defaultValue={initial?.minAge ?? 18} className={ui.input} />
         </div>
         <div>
-          <label className={ui.label} htmlFor="maxAge">Max age</label>
+          <label className={ui.label} htmlFor="maxAge">{t.staff.maxAgeLabel}</label>
           <input id="maxAge" name="maxAge" type="number" min={18} max={99} required defaultValue={initial?.maxAge ?? 99} className={ui.input} />
         </div>
         <div>
-          <label className={ui.label} htmlFor="maxDistanceKm">Max distance km</label>
-          <input id="maxDistanceKm" name="maxDistanceKm" type="number" min={1} placeholder="No limit" defaultValue={initial?.maxDistanceKm ?? ""} className={ui.input} />
+          <label className={ui.label} htmlFor="maxDistanceKm">{t.staff.maxDistanceKmLabel}</label>
+          <input id="maxDistanceKm" name="maxDistanceKm" type="number" min={1} placeholder={t.portal.noLimit} defaultValue={initial?.maxDistanceKm ?? ""} className={ui.input} />
         </div>
       </div>
       <div>
-        <label className={ui.label} htmlFor="dealbreakers">
-          Dealbreakers (JSON — hard filter)
-        </label>
+        <label className={ui.label} htmlFor="dealbreakers">{t.staff.dealbreakersJson}</label>
         <textarea
           id="dealbreakers"
           name="dealbreakers"
@@ -233,13 +243,11 @@ export function StaffPreferencesForm({
           spellCheck={false}
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          {'e.g. [{"questionKey":"smoking","disallowedValues":["regularly"]}]'}
+          {'[{"questionKey":"smoking","disallowedValues":["regularly"]}]'}
         </p>
       </div>
       <div>
-        <label className={ui.label} htmlFor="mustHaves">
-          Must-haves (JSON — scored, 20% component)
-        </label>
+        <label className={ui.label} htmlFor="mustHaves">{t.staff.mustHavesJson}</label>
         <textarea
           id="mustHaves"
           name="mustHaves"
@@ -249,12 +257,12 @@ export function StaffPreferencesForm({
           spellCheck={false}
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          {'e.g. [{"questionKey":"wants_children","acceptedValues":["yes"]}]'}
+          {'[{"questionKey":"wants_children","acceptedValues":["yes"]}]'}
         </p>
       </div>
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className={ui.btnPrimary}>
-          {pending ? "Saving…" : "Save preferences"}
+          {pending ? t.common.saving : t.portal.savePreferences}
         </button>
         <Status state={state} />
       </div>
@@ -267,6 +275,7 @@ export function StaffPreferencesForm({
 /* ------------------------------------------------------------------ */
 
 export function StaffPhotoUploadForm({ action }: { action: BoundAction }) {
+  const { t } = useDict();
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-2">
@@ -275,11 +284,11 @@ export function StaffPhotoUploadForm({ action }: { action: BoundAction }) {
         type="file"
         accept="image/jpeg,image/png,image/webp"
         required
-        aria-label="Photo file"
+        aria-label={t.portal.addPhoto}
         className="block text-sm file:mr-3 file:rounded-md file:border-0 file:bg-foreground file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-background hover:file:opacity-90"
       />
       <button type="submit" disabled={pending} className={ui.btnSecondary}>
-        {pending ? "Uploading…" : "Upload"}
+        {pending ? t.common.uploading : t.common.upload}
       </button>
       <Status state={state} />
     </form>
@@ -297,19 +306,22 @@ export function StaffIntakeForm({
   action: BoundAction;
   initial: Record<string, unknown>;
 }) {
+  const { t } = useDict();
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <form action={formAction} className="space-y-5">
       {Object.entries(QUESTION_RULES).map(([key, rule]) => {
         const value = initial[key];
+        const label = questionLabel(t, key, rule.label);
         if (rule.type === "similarity" || rule.type === "complementarity") {
           const min = rule.scaleMin ?? 1;
           const max = rule.scaleMax ?? 5;
+          const anchors = questionAnchors(t, key, rule.anchors);
           return (
             <div key={key}>
-              <span className={ui.label}>{rule.label}</span>
+              <span className={ui.label}>{label}</span>
               <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
-                <span className="w-28 text-right">{rule.anchors?.[0]}</span>
+                <span className="w-28 text-right">{anchors?.[0]}</span>
                 <div className="flex gap-3">
                   {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((p) => (
                     <label key={p} className="flex flex-col items-center gap-0.5">
@@ -318,7 +330,7 @@ export function StaffIntakeForm({
                     </label>
                   ))}
                 </div>
-                <span className="w-28">{rule.anchors?.[1]}</span>
+                <span className="w-28">{anchors?.[1]}</span>
               </div>
             </div>
           );
@@ -326,12 +338,12 @@ export function StaffIntakeForm({
         if (rule.type === "exact") {
           return (
             <div key={key}>
-              <span className={ui.label}>{rule.label}</span>
+              <span className={ui.label}>{label}</span>
               <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
                 {rule.options?.map((o) => (
                   <label key={o.value} className="flex items-center gap-1.5 text-sm">
                     <input type="radio" name={key} value={o.value} defaultChecked={value === o.value} />
-                    {o.label}
+                    {questionOption(t, key, o.value, o.label)}
                   </label>
                 ))}
               </div>
@@ -341,12 +353,12 @@ export function StaffIntakeForm({
         const selected = Array.isArray(value) ? (value as string[]) : [];
         return (
           <div key={key}>
-            <span className={ui.label}>{rule.label}</span>
+            <span className={ui.label}>{label}</span>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-1 sm:grid-cols-4">
               {rule.options?.map((o) => (
                 <label key={o.value} className="flex items-center gap-1.5 text-sm">
                   <input type="checkbox" name={key} value={o.value} defaultChecked={selected.includes(o.value)} />
-                  {o.label}
+                  {questionOption(t, key, o.value, o.label)}
                 </label>
               ))}
             </div>
@@ -355,7 +367,7 @@ export function StaffIntakeForm({
       })}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={pending} className={ui.btnPrimary}>
-          {pending ? "Saving…" : "Save questionnaire"}
+          {pending ? t.common.saving : t.staff.saveQuestionnaireBtn}
         </button>
         <Status state={state} />
       </div>

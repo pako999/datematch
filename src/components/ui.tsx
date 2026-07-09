@@ -70,8 +70,18 @@ const CLIENT_STATUS_STYLES: Record<ClientStatus, string> = {
   churned: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300",
 };
 
-export function ClientStatusBadge({ status }: { status: ClientStatus }) {
-  return <span className={cn(badgeBase, CLIENT_STATUS_STYLES[status])}>{status}</span>;
+export function ClientStatusBadge({
+  status,
+  label,
+}: {
+  status: ClientStatus;
+  label?: string;
+}) {
+  return (
+    <span className={cn(badgeBase, CLIENT_STATUS_STYLES[status])}>
+      {label ?? status}
+    </span>
+  );
 }
 
 export const INTRO_STATUS_LABELS: Record<IntroStatus, string> = {
@@ -100,10 +110,16 @@ const INTRO_STATUS_STYLES: Record<IntroStatus, string> = {
   no_match: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300",
 };
 
-export function IntroStatusBadge({ status }: { status: IntroStatus }) {
+export function IntroStatusBadge({
+  status,
+  label,
+}: {
+  status: IntroStatus;
+  label?: string;
+}) {
   return (
     <span className={cn(badgeBase, INTRO_STATUS_STYLES[status])}>
-      {INTRO_STATUS_LABELS[status]}
+      {label ?? INTRO_STATUS_LABELS[status]}
     </span>
   );
 }
@@ -114,29 +130,39 @@ const SENTIMENT_STYLES: Record<Sentiment, string> = {
   negative: "bg-red-500/15 text-red-700 dark:text-red-300",
 };
 
-export function SentimentBadge({ sentiment }: { sentiment: Sentiment }) {
-  return <span className={cn(badgeBase, SENTIMENT_STYLES[sentiment])}>{sentiment}</span>;
+export function SentimentBadge({
+  sentiment,
+  label,
+}: {
+  sentiment: Sentiment;
+  label?: string;
+}) {
+  return (
+    <span className={cn(badgeBase, SENTIMENT_STYLES[sentiment])}>
+      {label ?? sentiment}
+    </span>
+  );
 }
 
 /** Match-score tiers: how a matchmaker reads the number, not the decimal. */
 export function scoreTier(score: number): {
-  label: "Strong" | "Promising" | "Stretch";
+  key: "strong" | "promising" | "stretch";
   cls: string;
 } {
   if (score >= 75) {
-    return { label: "Strong", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" };
+    return { key: "strong", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" };
   }
   if (score >= 55) {
-    return { label: "Promising", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300" };
+    return { key: "promising", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300" };
   }
-  return { label: "Stretch", cls: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300" };
+  return { key: "stretch", cls: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-300" };
 }
 
-export function ScoreBadge({ score }: { score: number }) {
+export function ScoreBadge({ score, label }: { score: number; label?: string }) {
   const tier = scoreTier(score);
   return (
     <span className={cn(badgeBase, tier.cls)} title={`${score}/100`}>
-      {tier.label} · {Math.round(score)}
+      {label ?? tier.key} · {Math.round(score)}
     </span>
   );
 }

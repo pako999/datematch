@@ -1,0 +1,1 @@
+ALTER TABLE "clients" ADD COLUMN "country" text DEFAULT 'Slovenija' NOT NULL;

@@ -526,6 +526,7 @@ export async function runSeed(db: DB, opts: { wipe: boolean }): Promise<SeedSumm
         birthdate: new Date(`${p.birthdate}T00:00:00Z`),
         gender: p.gender,
         city: p.location.city,
+        country: "Slovenija",
         lat: p.location.lat,
         lng: p.location.lng,
         status: p.status,
