@@ -1,8 +1,31 @@
 "use client";
 
 import { useActionState } from "react";
-import { addStaffMember, type ActionResult } from "@/lib/staff/staff-actions";
+import {
+  addStaffMember,
+  loadDemoData,
+  type ActionResult,
+} from "@/lib/staff/staff-actions";
 import { ui } from "@/components/ui";
+
+export function LoadDemoDataForm() {
+  const [state, formAction, pending] = useActionState(loadDemoData, null);
+  return (
+    <form action={formAction} className="flex flex-wrap items-center gap-3">
+      <button type="submit" disabled={pending} className={ui.btnPrimary}>
+        {pending ? "Loading demo data…" : "Load demo data"}
+      </button>
+      {state &&
+        (state.ok ? (
+          <span className="text-sm text-emerald-600 dark:text-emerald-400">
+            Demo roster loaded — see Clients and Introductions.
+          </span>
+        ) : (
+          <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
+        ))}
+    </form>
+  );
+}
 
 export function AddStaffForm() {
   const [state, formAction, pending] = useActionState(addStaffMember, null);

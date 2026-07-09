@@ -16,6 +16,8 @@ pnpm db:seed                # labelled test personas; refuses a non-empty DB wit
 pnpm dev
 ```
 
+**Migrations are also automatic on deploy:** `pnpm build` runs `scripts/migrate.ts` first, which applies pending migrations when `DATABASE_URL` is set and skips cleanly when it isn't. Demo data can be loaded without a terminal via the admin-only **Load demo data** button in `/settings` (only offered while the roster is empty; never overwrites anything).
+
 Checks: `pnpm typecheck` · `pnpm test` · `pnpm build`
 
 **First admin:** set `ADMIN_BOOTSTRAP_EMAILS` to your email, sign in at `/sign-in` — you become an `admin` on first visit to the console. Add further staff in `/settings` (they get access when they first sign in with that email).
@@ -90,7 +92,7 @@ Client PII (photos, contact details) is staff-only; the portal shows a client on
 
 ## Deploy (Vercel)
 
-1. Set every var from `.env.example` (all optional integrations no-op gracefully when unset).
-2. `pnpm db:migrate` against Neon.
-3. Point the Inngest app at `https://<app>/api/inngest`.
-4. Sign in with a bootstrap admin email, add your staff in `/settings`.
+1. Import the repo and set env vars from `.env.example` (all optional integrations no-op gracefully when unset; the landing page lists any missing required vars).
+2. Deploy — migrations run automatically during the build.
+3. Sign in with a bootstrap admin email; optionally click **Load demo data** in `/settings`.
+4. Point the Inngest app at `https://<app>/api/inngest` (if using background jobs).

@@ -1,10 +1,11 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { PENDING_STAFF_PREFIX, requireStaffAction } from "@/lib/auth";
+import { runSeed } from "@/lib/seed-data";
 
 export interface ActionResult {
   ok: boolean;
@@ -62,6 +63,36 @@ export async function updateStaffRole(
     .set({ role })
     .where(eq(schema.staff.id, staffId));
   revalidatePath("/settings");
+}
+
+/**
+ * Admin one-click demo data. Only fills an EMPTY roster (never wipes),
+ * so it's safe to expose as a button; existing staff are preserved.
+ */
+export async function loadDemoData(
+  _prev: ActionResult | null,
+  _formData: FormData,
+): Promise<ActionResult> {
+  await requireStaffAction({ admin: true });
+  const [row] = await db()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(schema.clients);
+  if ((row?.count ?? 0) > 0) {
+    return {
+      ok: false,
+      error: "The roster isn't empty — demo data only loads into an empty database.",
+    };
+  }
+
+  const summary = await runSeed(db(), { wipe: false });
+  revalidatePath("/clients");
+  revalidatePath("/dashboard");
+  revalidatePath("/introductions");
+  revalidatePath("/settings");
+  console.info(
+    `Demo data loaded: ${summary.clients} clients, ${summary.scores} scores, ${summary.intros} intros`,
+  );
+  return { ok: true };
 }
 
 export async function removeStaffMember(staffId: string): Promise<void> {

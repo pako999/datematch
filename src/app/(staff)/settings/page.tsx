@@ -1,7 +1,9 @@
+import { sql } from "drizzle-orm";
+import { db, schema } from "@/db";
 import { requireStaffPage, PENDING_STAFF_PREFIX } from "@/lib/auth";
 import { listStaff } from "@/lib/staff/clients";
 import { removeStaffMember, updateStaffRole } from "@/lib/staff/staff-actions";
-import { AddStaffForm } from "@/components/settings-forms";
+import { AddStaffForm, LoadDemoDataForm } from "@/components/settings-forms";
 import { Card, ui } from "@/components/ui";
 import { COMPONENT_WEIGHTS, QUESTION_RULES } from "@/lib/matching/questions";
 
@@ -9,6 +11,10 @@ export default async function SettingsPage() {
   const me = await requireStaffPage();
   const staffList = await listStaff();
   const isAdmin = me.role === "admin";
+  const [clientCountRow] = await db()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(schema.clients);
+  const clientCount = clientCountRow?.count ?? 0;
 
   return (
     <div className="max-w-4xl space-y-4">
@@ -108,6 +114,18 @@ export default async function SettingsPage() {
           </table>
         </div>
       </Card>
+
+      {isAdmin && clientCount === 0 && (
+        <Card title="Demo data">
+          <p className="mb-3 text-sm text-muted-foreground">
+            The roster is empty. Load 10 labelled test personas with real
+            engine-computed match scores and sample introductions so you can
+            click through the whole workflow. Safe: it never overwrites
+            existing data and your staff account is untouched.
+          </p>
+          <LoadDemoDataForm />
+        </Card>
+      )}
 
       <Card title="Account">
         <p className="text-sm text-muted-foreground">
