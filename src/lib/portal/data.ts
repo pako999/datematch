@@ -7,33 +7,38 @@ export interface MyProfile {
   client: schema.Client | null;
   preferences: schema.ClientPreferencesRow | null;
   intake: Record<string, unknown>;
+  photos: schema.ClientPhoto[];
 }
 
 /** Load the signed-in portal user's client record (null pre-intake). */
 export async function getMyProfile(): Promise<MyProfile> {
   const { userId } = await auth();
   if (!userId) {
-    return { client: null, preferences: null, intake: {} };
+    return { client: null, preferences: null, intake: {}, photos: [] };
   }
 
   const client = await db().query.clients.findFirst({
     where: eq(schema.clients.clerkUserId, userId),
   });
   if (!client) {
-    return { client: null, preferences: null, intake: {} };
+    return { client: null, preferences: null, intake: {}, photos: [] };
   }
 
-  const [preferences, answers] = await Promise.all([
+  const [preferences, answers, photos] = await Promise.all([
     db().query.clientPreferences.findFirst({
       where: eq(schema.clientPreferences.clientId, client.id),
     }),
     db().query.intakeAnswers.findMany({
       where: eq(schema.intakeAnswers.clientId, client.id),
     }),
+    db().query.clientPhotos.findMany({
+      where: eq(schema.clientPhotos.clientId, client.id),
+      orderBy: schema.clientPhotos.position,
+    }),
   ]);
 
   const intake: Record<string, unknown> = {};
   for (const a of answers) intake[a.questionKey] = a.value;
 
-  return { client, preferences: preferences ?? null, intake };
+  return { client, preferences: preferences ?? null, intake, photos };
 }

@@ -13,9 +13,13 @@ import {
   recomputeClientScores,
   regenerateIntakeSummary,
   updateClientManagement,
+  uploadClientPhoto,
 } from "@/lib/staff/actions";
 import { proposeIntroduction } from "@/lib/staff/intro-actions";
-import { StaffManagementForm } from "@/components/staff-client-forms";
+import {
+  StaffManagementForm,
+  StaffPhotoUploadForm,
+} from "@/components/staff-client-forms";
 import {
   Card,
   ClientStatusBadge,
@@ -245,10 +249,13 @@ export default async function ClientDetailPage({
             </div>
           )}
           {writable && (
-            <form action={addClientPhoto.bind(null, id)} className="mt-3 flex gap-2">
-              <input name="url" placeholder="https://… image URL" className={ui.input} />
-              <button type="submit" className={ui.btnSecondary}>Add</button>
-            </form>
+            <div className="mt-3 space-y-2">
+              <StaffPhotoUploadForm action={uploadClientPhoto.bind(null, id)} />
+              <form action={addClientPhoto.bind(null, id)} className="flex gap-2">
+                <input name="url" placeholder="or paste an https image URL" className={ui.input} />
+                <button type="submit" className={ui.btnSecondary}>Add URL</button>
+              </form>
+            </div>
           )}
         </Card>
 

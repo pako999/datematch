@@ -4,7 +4,7 @@
 
 ## Stack
 
-Next.js 15 (App Router, RSC, Server Actions) · TypeScript strict · Tailwind v4 · Clerk (auth for staff + portal clients) · Neon PostgreSQL + Drizzle + pgvector · Inngest (recompute, embeddings, reminders) · Resend (notifications + intro emails) · PostHog (internal analytics) · Anthropic `claude-sonnet-4-6` (rationales + intake summaries) · Voyage AI (bio embeddings) · Vercel.
+Next.js 15 (App Router, RSC, Server Actions) · TypeScript strict · Tailwind v4 · Clerk (auth for staff + portal clients) · Neon PostgreSQL + Drizzle + pgvector · Inngest (recompute, embeddings, reminders) · Resend (notifications + intro emails) · PostHog (internal analytics) · Anthropic `claude-sonnet-4-6` (rationales + intake summaries) · Voyage AI (bio embeddings) · Vercel Blob (photo uploads) · Vercel.
 
 ## Setup
 
@@ -82,7 +82,7 @@ Local dev: `npx inngest-cli dev` and point it at `/api/inngest`.
 
 ## Privacy
 
-Client PII (photos, contact details) is staff-only; the portal shows a client only their own record; there are no public data routes. Every edit is attributable (`updated_by_staff_id` + notes timeline + intro history). Clients without consent never enter any shortlist (enforced in SQL *and* the engine). 18+ age gate on both intake paths. GDPR hard-delete (admin, name-confirmation required) cascades through everything via FKs, then an Inngest job sweeps and hooks external systems.
+Client PII (photos, contact details) is staff-only; the portal shows a client only their own record; there are no public data routes. Photos upload to Vercel Blob (JPEG/PNG/WebP ≤ 5 MB, both from the portal and the staff profile); blob URLs carry unguessable random suffixes and are only rendered inside authenticated pages, and the blob is deleted along with the photo row. Every edit is attributable (`updated_by_staff_id` + notes timeline + intro history). Clients without consent never enter any shortlist (enforced in SQL *and* the engine). 18+ age gate on both intake paths. GDPR hard-delete (admin, name-confirmation required) cascades through everything via FKs, then an Inngest job sweeps and hooks external systems.
 
 ## Seed data
 

@@ -14,6 +14,7 @@ import { generateIntakeSummary } from "@/lib/intake/summarize";
 import { generateRationale } from "@/lib/matching/explain";
 import { recomputeScoresForClient } from "@/lib/matching/candidates";
 import { sendClientDeleted } from "@/inngest/client";
+import { deletePhotoBlob, uploadPhotoBlob } from "@/lib/storage";
 
 export interface ActionResult {
   ok: boolean;
@@ -337,13 +338,7 @@ export async function addClientNote(
   revalidatePath(`/clients/${clientId}`);
 }
 
-export async function addClientPhoto(
-  clientId: string,
-  formData: FormData,
-): Promise<void> {
-  await requireManagedClient(clientId);
-  const url = String(formData.get("url") ?? "").trim();
-  if (!/^https:\/\/.+/.test(url)) throw new Error("Photo URL must be https");
+async function insertPhotoRow(clientId: string, url: string): Promise<void> {
   const existing = await db()
     .select()
     .from(schema.clientPhotos)
@@ -354,6 +349,34 @@ export async function addClientPhoto(
     position: existing.length,
     isPrimary: existing.length === 0,
   });
+}
+
+export async function uploadClientPhoto(
+  clientId: string,
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireManagedClient(clientId);
+  const file = formData.get("photo");
+  if (!(file instanceof File)) return fail("Choose a photo to upload");
+  try {
+    const url = await uploadPhotoBlob(clientId, file);
+    await insertPhotoRow(clientId, url);
+  } catch (err) {
+    return fail(err instanceof Error ? err.message : "Upload failed");
+  }
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: true };
+}
+
+export async function addClientPhoto(
+  clientId: string,
+  formData: FormData,
+): Promise<void> {
+  await requireManagedClient(clientId);
+  const url = String(formData.get("url") ?? "").trim();
+  if (!/^https:\/\/.+/.test(url)) throw new Error("Photo URL must be https");
+  await insertPhotoRow(clientId, url);
   revalidatePath(`/clients/${clientId}`);
 }
 
@@ -362,7 +385,11 @@ export async function deleteClientPhoto(
   photoId: string,
 ): Promise<void> {
   await requireManagedClient(clientId);
+  const photo = await db().query.clientPhotos.findFirst({
+    where: eq(schema.clientPhotos.id, photoId),
+  });
   await db().delete(schema.clientPhotos).where(eq(schema.clientPhotos.id, photoId));
+  if (photo) await deletePhotoBlob(photo.url);
   revalidatePath(`/clients/${clientId}`);
 }
 

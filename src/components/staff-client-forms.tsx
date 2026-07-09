@@ -263,6 +263,30 @@ export function StaffPreferencesForm({
 }
 
 /* ------------------------------------------------------------------ */
+/* Photo upload (Vercel Blob)                                          */
+/* ------------------------------------------------------------------ */
+
+export function StaffPhotoUploadForm({ action }: { action: BoundAction }) {
+  const [state, formAction, pending] = useActionState(action, null);
+  return (
+    <form action={formAction} className="flex flex-wrap items-center gap-2">
+      <input
+        name="photo"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        required
+        aria-label="Photo file"
+        className="block text-sm file:mr-3 file:rounded-md file:border-0 file:bg-foreground file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-background hover:file:opacity-90"
+      />
+      <button type="submit" disabled={pending} className={ui.btnSecondary}>
+        {pending ? "Uploading…" : "Upload"}
+      </button>
+      <Status state={state} />
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Intake questionnaire (staff-entered)                                */
 /* ------------------------------------------------------------------ */
 

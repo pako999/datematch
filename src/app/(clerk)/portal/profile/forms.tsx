@@ -6,6 +6,7 @@ import {
   saveConsent,
   savePreferences,
   saveQuestionnaire,
+  uploadMyPhoto,
   type ActionResult,
 } from "@/lib/portal/actions";
 import { QUESTION_RULES } from "@/lib/matching/questions";
@@ -374,6 +375,37 @@ export function QuestionnaireForm({
         })}
         <div className="flex items-center gap-4">
           <SaveButton pending={pending} label="Save answers" />
+          <FormStatus state={state} />
+        </div>
+      </fieldset>
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Photo upload                                                        */
+/* ------------------------------------------------------------------ */
+
+export function PhotoUploadForm({ disabled }: { disabled: boolean }) {
+  const [state, action, pending] = useActionState(uploadMyPhoto, null);
+  return (
+    <form action={action} className="space-y-3">
+      <fieldset disabled={disabled} className="space-y-3 disabled:opacity-50">
+        <div className={fieldCls}>
+          <label htmlFor="photo" className={labelCls}>
+            Add a photo <span className="text-muted-foreground">(JPEG, PNG or WebP, max 5 MB)</span>
+          </label>
+          <input
+            id="photo"
+            name="photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            required
+            className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-foreground file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-background hover:file:opacity-90"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <SaveButton pending={pending} label="Upload photo" />
           <FormStatus state={state} />
         </div>
       </fieldset>

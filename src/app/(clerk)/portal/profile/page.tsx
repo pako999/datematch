@@ -2,9 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getMyProfile } from "@/lib/portal/data";
+import { deleteMyPhoto } from "@/lib/portal/actions";
 import {
   BasicsForm,
   ConsentForm,
+  PhotoUploadForm,
   PreferencesForm,
   QuestionnaireForm,
   type BasicsInitial,
@@ -40,7 +42,7 @@ export default async function ProfilePage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
 
-  const { client, preferences, intake } = await getMyProfile();
+  const { client, preferences, intake, photos } = await getMyProfile();
 
   const basicsInitial: BasicsInitial | null = client
     ? {
@@ -92,6 +94,41 @@ export default async function ProfilePage() {
         description="Who you are and how we can reach you."
       >
         <BasicsForm initial={basicsInitial} />
+      </Section>
+
+      <Section
+        id="photos"
+        title="Photos"
+        description={
+          locked
+            ? "Save your basic details first to unlock this section."
+            : "Only your matchmaker sees these — they're never public. A clear, recent photo helps a lot."
+        }
+      >
+        {photos.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {photos.map((p) => (
+              <figure key={p.id} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.url}
+                  alt={p.isPrimary ? "Your primary photo" : "Your photo"}
+                  className="h-28 w-28 rounded-md object-cover"
+                />
+                <form action={deleteMyPhoto.bind(null, p.id)} className="absolute right-1 top-1">
+                  <button
+                    type="submit"
+                    className="rounded bg-black/60 px-1.5 text-xs text-white"
+                    title="Remove photo"
+                  >
+                    ×
+                  </button>
+                </form>
+              </figure>
+            ))}
+          </div>
+        )}
+        <PhotoUploadForm disabled={locked} />
       </Section>
 
       <Section

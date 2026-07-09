@@ -9,6 +9,7 @@ import { ageOn } from "@/lib/matching/score";
 import { QUESTION_RULES } from "@/lib/matching/questions";
 import { afterClientChange } from "@/lib/matching/refresh";
 import { capture } from "@/lib/analytics";
+import { deletePhotoBlob, uploadPhotoBlob } from "@/lib/storage";
 
 export interface ActionResult {
   ok: boolean;
@@ -282,6 +283,71 @@ export async function saveQuestionnaire(
   await afterClientChange(clientId);
   revalidatePath(PROFILE_PATH);
   return { ok: true };
+}
+
+/* ------------------------------------------------------------------ */
+/* Photos (client uploads their own — staff-viewable, never public)    */
+/* ------------------------------------------------------------------ */
+
+const MAX_PORTAL_PHOTOS = 6;
+
+export async function uploadMyPhoto(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const clientId = await getMyClientId(userId);
+  if (!clientId) {
+    return { ok: false, error: "Please save your basic details first." };
+  }
+
+  const existing = await db()
+    .select()
+    .from(schema.clientPhotos)
+    .where(eq(schema.clientPhotos.clientId, clientId));
+  if (existing.length >= MAX_PORTAL_PHOTOS) {
+    return { ok: false, error: `You can upload up to ${MAX_PORTAL_PHOTOS} photos.` };
+  }
+
+  const file = formData.get("photo");
+  if (!(file instanceof File)) {
+    return { ok: false, error: "Choose a photo to upload." };
+  }
+  try {
+    const url = await uploadPhotoBlob(clientId, file);
+    await db().insert(schema.clientPhotos).values({
+      clientId,
+      url,
+      position: existing.length,
+      isPrimary: existing.length === 0,
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Upload failed.",
+    };
+  }
+
+  revalidatePath(PROFILE_PATH);
+  return { ok: true };
+}
+
+export async function deleteMyPhoto(photoId: string): Promise<void> {
+  const userId = await requireUserId();
+  const clientId = await getMyClientId(userId);
+  if (!clientId) return;
+
+  const photo = await db().query.clientPhotos.findFirst({
+    where: eq(schema.clientPhotos.id, photoId),
+  });
+  // Owner check: clients can only remove their own photos.
+  if (!photo || photo.clientId !== clientId) return;
+
+  await db()
+    .delete(schema.clientPhotos)
+    .where(eq(schema.clientPhotos.id, photoId));
+  await deletePhotoBlob(photo.url);
+  revalidatePath(PROFILE_PATH);
 }
 
 /* ------------------------------------------------------------------ */
