@@ -1,6 +1,18 @@
 import Link from "next/link";
 
+function missingEnv(): string[] {
+  const required: Record<string, string | undefined> = {
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
+    DATABASE_URL: process.env.DATABASE_URL,
+  };
+  return Object.entries(required)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+}
+
 export default function Home() {
+  const missing = missingEnv();
   return (
     <main className="flex min-h-screen items-center justify-center p-8">
       <div className="max-w-md text-center">
@@ -29,6 +41,16 @@ export default function Home() {
             open the console
           </Link>
         </p>
+        {missing.length > 0 && (
+          <div className="mt-8 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-amber-700 dark:text-amber-300">
+            <p className="font-semibold">Setup incomplete</p>
+            <p className="mt-1">
+              Missing environment variables: {missing.join(", ")}. Sign-in and
+              data pages won&apos;t work until these are set (see README /
+              .env.example) and the app is redeployed.
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );
