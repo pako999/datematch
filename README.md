@@ -2,7 +2,7 @@
 
 **Staff-facing internal tool** for a professional matchmaking agency. Matchmakers manage a roster of clients (the daters are *records*, not users), get AI-ranked compatibility shortlists, and run introductions through a tracked pipeline whose feedback feeds back into scoring.
 
-There is no public signup, no swiping, and no client-to-client chat. All routes are staff-only.
+There is no swiping and no client-to-client chat. Clients can **self-register through the portal** (`/sign-up` → `/portal`) and fill in their own profile, which lands in the staff roster as a `lead`; matchmakers curate everything from there. All matchmaking screens are staff-only.
 
 ## Stack
 
@@ -29,6 +29,10 @@ Checks: `pnpm typecheck` · `pnpm test` · `pnpm build`
 | `readonly` | View only (e.g. assistants) |
 
 Staff rows live in the `staff` table keyed by Clerk user id.
+
+## Client portal (self-registration)
+
+Prospective clients register with Clerk (`/sign-up`) and complete their profile at `/portal/profile`: basic details → match preferences → compatibility questionnaire → consent. Self-registered records are linked via `clients.clerk_user_id`, created with status `lead` (staff activate after review), age-gated at 18+, and never enter anyone's shortlist until `consentToIntroduce` is ticked. The portal exposes the two most common hard/soft requirements as plain-language toggles (no smokers → dealbreaker; must want children → must-have); matchmakers refine anything richer on the staff side. Sections after "basic details" stay locked until the client record exists, so the flow is resumable at any point.
 
 ## How scoring works
 
@@ -61,12 +65,13 @@ Client PII (photos, contact info) is staff-only; there are no public routes. Eve
 
 1. ✅ Schema + migrations + seed (`src/db/schema.ts`, `drizzle/`, `scripts/seed.ts`)
 2. ✅ Scoring engine + tests (`src/lib/matching/`)
-3. ⏳ Staff auth + roles (Clerk)
-4. ⏳ Client roster / profile / intake screens
-5. ⏳ Suggested-matches panel + AI rationale
-6. ⏳ Introduction pipeline UI + feedback loop
-7. ⏳ Inngest jobs + Resend notifications
-8. ⏳ PostHog analytics + polish
+3. ✅ Client self-registration portal (Clerk auth, resumable profile/intake forms)
+4. ⏳ Staff auth + roles (staff console gating)
+5. ⏳ Client roster / profile / intake screens (staff side)
+6. ⏳ Suggested-matches panel + AI rationale
+7. ⏳ Introduction pipeline UI + feedback loop
+8. ⏳ Inngest jobs + Resend notifications
+9. ⏳ PostHog analytics + polish
 
 ## Deploy
 

@@ -88,6 +88,11 @@ export const clients = pgTable(
   "clients",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * Set when the client self-registered through the portal (Clerk user
+     * id). Null for records created by staff on the client's behalf.
+     */
+    clerkUserId: text("clerk_user_id").unique(),
     fullName: text("full_name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),

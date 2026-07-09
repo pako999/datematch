@@ -14,6 +14,9 @@
  *
  * Weights are relative within the intake component (normalized at scoring
  * time), so adding a question never silently deflates the others.
+ *
+ * `options` / `anchors` drive the intake forms (portal + staff) and the
+ * settings screen; they have no effect on scoring.
  */
 
 export type QuestionRuleType =
@@ -21,6 +24,11 @@ export type QuestionRuleType =
   | "complementarity"
   | "exact"
   | "overlap";
+
+export interface QuestionOption {
+  value: string;
+  label: string;
+}
 
 export interface QuestionRule {
   type: QuestionRuleType;
@@ -31,6 +39,10 @@ export interface QuestionRule {
   scaleMax?: number;
   /** Human label for the settings screen / rationale prompts. */
   label: string;
+  /** For exact/overlap rules: the selectable answers (intake forms). */
+  options?: QuestionOption[];
+  /** For likert rules: labels of the low and high end of the scale. */
+  anchors?: [string, string];
 }
 
 export const QUESTION_RULES: Record<string, QuestionRule> = {
@@ -38,11 +50,21 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     type: "exact",
     weight: 3,
     label: "Wants children",
+    options: [
+      { value: "yes", label: "Yes" },
+      { value: "no", label: "No" },
+      { value: "unsure", label: "Not sure yet" },
+    ],
   },
   relationship_goal: {
     type: "exact",
     weight: 3,
-    label: "Relationship goal (long-term / marriage / open)",
+    label: "Relationship goal",
+    options: [
+      { value: "long_term", label: "Long-term relationship" },
+      { value: "marriage", label: "Marriage" },
+      { value: "open", label: "Open to see where it goes" },
+    ],
   },
   religion_importance: {
     type: "similarity",
@@ -50,6 +72,7 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     scaleMin: 1,
     scaleMax: 5,
     label: "Importance of religion",
+    anchors: ["Not important", "Very important"],
   },
   political_alignment: {
     type: "similarity",
@@ -57,13 +80,15 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     scaleMin: 1,
     scaleMax: 5,
     label: "Political alignment",
+    anchors: ["Progressive", "Conservative"],
   },
   social_energy: {
     type: "similarity",
     weight: 1.5,
     scaleMin: 1,
     scaleMax: 5,
-    label: "Social energy (homebody ↔ out every night)",
+    label: "Social energy",
+    anchors: ["Homebody", "Out every night"],
   },
   ambition: {
     type: "similarity",
@@ -71,6 +96,7 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     scaleMin: 1,
     scaleMax: 5,
     label: "Career ambition",
+    anchors: ["Work to live", "Highly driven"],
   },
   tidiness: {
     type: "similarity",
@@ -78,6 +104,7 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     scaleMin: 1,
     scaleMax: 5,
     label: "Tidiness at home",
+    anchors: ["Relaxed", "Everything in its place"],
   },
   talker_listener: {
     type: "complementarity",
@@ -85,6 +112,7 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     scaleMin: 1,
     scaleMax: 5,
     label: "Talker ↔ listener balance",
+    anchors: ["Mostly listen", "Mostly talk"],
   },
   planner_spontaneous: {
     type: "complementarity",
@@ -92,21 +120,57 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     scaleMin: 1,
     scaleMax: 5,
     label: "Planner ↔ spontaneous balance",
+    anchors: ["Plan everything", "Fully spontaneous"],
   },
   hobbies: {
     type: "overlap",
     weight: 2,
-    label: "Shared hobbies & interests",
+    label: "Hobbies & interests",
+    options: [
+      { value: "hiking", label: "Hiking & outdoors" },
+      { value: "cooking", label: "Cooking" },
+      { value: "film", label: "Film & cinema" },
+      { value: "music", label: "Music & concerts" },
+      { value: "dancing", label: "Dancing" },
+      { value: "festivals", label: "Festivals" },
+      { value: "yoga", label: "Yoga & wellness" },
+      { value: "running", label: "Running" },
+      { value: "cycling", label: "Cycling" },
+      { value: "climbing", label: "Climbing" },
+      { value: "reading", label: "Reading" },
+      { value: "travel", label: "Travel" },
+      { value: "museums", label: "Museums & art" },
+      { value: "ceramics", label: "Crafts & making" },
+      { value: "wine", label: "Wine & food culture" },
+      { value: "photography", label: "Photography" },
+      { value: "gaming", label: "Gaming" },
+      { value: "volunteering", label: "Volunteering" },
+    ],
   },
   weekend_style: {
     type: "overlap",
     weight: 1,
-    label: "Preferred weekend activities",
+    label: "Preferred weekend",
+    options: [
+      { value: "nature", label: "Out in nature" },
+      { value: "quiet-dinner", label: "Quiet dinner" },
+      { value: "nightlife", label: "Nightlife" },
+      { value: "events", label: "Concerts & events" },
+      { value: "sport", label: "Sport & training" },
+      { value: "hosting", label: "Hosting friends & family" },
+      { value: "family", label: "Family time" },
+      { value: "markets", label: "Markets & city strolls" },
+    ],
   },
   smoking: {
     type: "exact",
     weight: 1.5,
     label: "Smoking habits",
+    options: [
+      { value: "never", label: "Never" },
+      { value: "socially", label: "Socially" },
+      { value: "regularly", label: "Regularly" },
+    ],
   },
   drinking: {
     type: "similarity",
@@ -114,11 +178,18 @@ export const QUESTION_RULES: Record<string, QuestionRule> = {
     scaleMin: 1,
     scaleMax: 5,
     label: "Drinking frequency",
+    anchors: ["Never", "Most days"],
   },
   pets: {
     type: "overlap",
     weight: 0.5,
-    label: "Pets owned / wanted",
+    label: "Pets owned or wanted",
+    options: [
+      { value: "dog", label: "Dog" },
+      { value: "cat", label: "Cat" },
+      { value: "small-pets", label: "Small pets" },
+      { value: "none", label: "No pets" },
+    ],
   },
 };
 
