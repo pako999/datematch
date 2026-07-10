@@ -98,19 +98,19 @@ const sl = {
   home: {
     navSignIn: "Prijava",
     navCreateProfile: "Ustvari profil",
-    heroKicker: "Osebna agencija za povezovanje",
-    heroTitle: "Ljubezen ni algoritem. Je človeška odločitev.",
+    heroKicker: "Personalizirano iskanje partnerja",
+    heroTitle: "Vi poveste, koga iščete. Mi ga najdemo za vas.",
     heroSub:
-      "Pri DateMatch vas spozna osebni svetovalec, skrbno izbere ujemanja in organizira predstavitve. Brez javnih profilov, brez drsanja — samo premišljena srečanja z resnimi ljudmi.",
+      "DateMatch ni še ena aplikacija za spoznavanje. Smo agencija za personalizirano iskanje: vaš osebni svetovalec preuči vaše želje, namesto vas poišče in preveri ujemanja ter organizira predstavitev. Vi se samo odločite za srečanje.",
     ctaPrimary: "Ustvarite svoj profil",
     ctaSecondary: "Prijava za člane",
     howTitle: "Kako deluje",
     step1Title: "Vaš profil",
     step1Text:
       "Povejte nam, kdo ste in koga iščete — kratek vprašalnik, vaše besede in fotografije, ki jih vidi samo vaš svetovalec.",
-    step2Title: "Osebni izbor",
+    step2Title: "Mi iščemo namesto vas",
     step2Text:
-      "Svetovalec s pomočjo pametnega ujemanja in lastne presoje izbere ljudi, ki se resnično skladajo z vašimi vrednotami in življenjem.",
+      "Vaš svetovalec s pomočjo pametnega ujemanja in lastne presoje personalizirano poišče ljudi, ki se resnično skladajo z vašimi vrednotami in življenjem — vam ni treba brskati po profilih.",
     step3Title: "Predstavitev",
     step3Text:
       "Ko oba rečeta da, organiziramo prvi zmenek. Po njem zberemo vtise in vsak naslednji izbor je še boljši.",
@@ -622,19 +622,19 @@ const en: Dict = {
   home: {
     navSignIn: "Sign in",
     navCreateProfile: "Create profile",
-    heroKicker: "A personal matchmaking agency",
-    heroTitle: "Love isn't an algorithm. It's a human decision.",
+    heroKicker: "Personalized partner search",
+    heroTitle: "You tell us who you're looking for. We find them for you.",
     heroSub:
-      "At DateMatch a personal matchmaker gets to know you, hand-picks your matches, and arranges the introductions. No public profiles, no swiping — just thoughtful meetings with serious people.",
+      "DateMatch isn't another dating app. We're a personalized-search agency: your personal matchmaker studies your wishes, finds and vets matches on your behalf, and arranges the introduction. All you do is decide to meet.",
     ctaPrimary: "Create your profile",
     ctaSecondary: "Member sign-in",
     howTitle: "How it works",
     step1Title: "Your profile",
     step1Text:
       "Tell us who you are and who you're looking for — a short questionnaire, your own words, and photos seen only by your matchmaker.",
-    step2Title: "A personal selection",
+    step2Title: "We search for you",
     step2Text:
-      "Your matchmaker combines smart matching with human judgement to pick people who genuinely fit your values and your life.",
+      "Your matchmaker combines smart matching with human judgement to personally find people who genuinely fit your values and your life — no browsing profiles yourself.",
     step3Title: "The introduction",
     step3Text:
       "When you both say yes, we arrange the first date. Afterwards we gather impressions, and every next pick gets better.",

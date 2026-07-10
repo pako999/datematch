@@ -97,6 +97,9 @@ export default async function Home() {
           <h1 className="mx-auto mt-4 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
             {home.heroTitle}
           </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
+            {home.heroSub}
+          </p>
         </section>
 
         {/* How it works */}
