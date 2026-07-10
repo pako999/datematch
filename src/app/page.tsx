@@ -35,31 +35,24 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Full-screen hero — public/hero.webp as a cover background with the
-          header and CTAs overlaid. The image is always dark, so overlay
-          text uses fixed light colors regardless of theme. */}
-      <section className="relative min-h-svh w-full">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/hero.webp"
-          alt={home.heroTitle}
-          className="absolute inset-0 h-full w-full object-cover object-[30%_center]"
-          fetchPriority="high"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50" />
-
-        {/* The banner carries its own logo bottom-left content — the
-            overlay adds only navigation (top-right) and CTAs (bottom-right). */}
-        <header className="absolute inset-x-0 top-0 z-20">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-end px-6 py-5">
-            <nav className="flex items-center gap-4 text-sm">
+      {/* Responsive full-screen hero. The banner is never cropped:
+          object-contain scales it to fit every viewport, letterboxed into
+          a background matching the artwork's edges. Desktop fills the
+          viewport; small screens show the banner at natural height with
+          the CTAs directly beneath it. */}
+      <section className="relative flex w-full flex-col bg-[#131120] lg:min-h-svh">
+        {/* Static row on small screens (no overlay overflow); floats over
+            the artwork from lg up. */}
+        <header className="relative z-20 lg:absolute lg:inset-x-0 lg:top-0">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-end px-4 py-3 lg:px-6 lg:py-4">
+            <nav className="flex flex-wrap items-center justify-end gap-2 rounded-full bg-black/35 px-3 py-1.5 text-sm backdrop-blur-sm sm:gap-4 sm:px-4">
               <LanguageSwitcher variant="onDark" />
               <Link href="/sign-in" className="text-white hover:underline">
                 {home.navSignIn}
               </Link>
               <Link
                 href="/sign-up"
-                className="rounded-md bg-white px-3 py-1.5 font-medium text-black hover:bg-white/90"
+                className="whitespace-nowrap rounded-md bg-white px-3 py-1.5 font-medium text-black hover:bg-white/90"
               >
                 {home.navCreateProfile}
               </Link>
@@ -67,21 +60,31 @@ export default async function Home() {
           </div>
         </header>
 
-        <div className="absolute inset-x-0 bottom-0 z-10 pb-8">
-          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-3 px-6 sm:justify-end">
-            <Link
-              href="/sign-up"
-              className="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 text-sm font-semibold text-black shadow-lg hover:bg-white/90"
-            >
-              {home.ctaPrimary}
-            </Link>
-            <Link
-              href="/sign-in"
-              className="inline-flex items-center justify-center rounded-md border border-white/60 bg-black/30 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm hover:bg-black/50"
-            >
-              {home.ctaSecondary}
-            </Link>
-          </div>
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero.webp"
+            alt={home.heroTitle}
+            className="h-auto w-full object-contain lg:max-h-[calc(100svh-6rem)]"
+            width={1672}
+            height={941}
+            fetchPriority="high"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 px-6 pb-8 pt-2 lg:pb-6">
+          <Link
+            href="/sign-up"
+            className="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 text-sm font-semibold text-black shadow-lg hover:bg-white/90"
+          >
+            {home.ctaPrimary}
+          </Link>
+          <Link
+            href="/sign-in"
+            className="inline-flex items-center justify-center rounded-md border border-white/50 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            {home.ctaSecondary}
+          </Link>
         </div>
       </section>
 
