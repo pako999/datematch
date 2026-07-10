@@ -16,8 +16,6 @@ function missingEnv(): string[] {
 
 const primaryBtn =
   "inline-flex items-center justify-center rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:opacity-90";
-const secondaryBtn =
-  "inline-flex items-center justify-center rounded-md border border-black/15 px-5 py-2.5 text-sm font-medium hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10";
 
 export default async function Home() {
   const { t } = await getI18n();
@@ -37,58 +35,65 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
-        <span className="text-lg font-semibold tracking-tight">
-          Date<span className="text-rose-600 dark:text-rose-400">Match</span>
-        </span>
-        <nav className="flex items-center gap-4 text-sm">
-          <LanguageSwitcher />
-          <Link href="/sign-in" className="hover:underline">
-            {home.navSignIn}
-          </Link>
-          <Link
-            href="/sign-up"
-            className="rounded-md bg-foreground px-3 py-1.5 font-medium text-background hover:opacity-90"
-          >
-            {home.navCreateProfile}
-          </Link>
-        </nav>
-      </header>
+      {/* Full-screen hero — public/hero.webp as a cover background with the
+          header and CTAs overlaid. The image is always dark, so overlay
+          text uses fixed light colors regardless of theme. */}
+      <section className="relative min-h-svh w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/hero.webp"
+          alt={home.heroTitle}
+          className="absolute inset-0 h-full w-full object-cover object-[30%_center]"
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50" />
 
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="mx-auto max-w-5xl px-6 pb-20 pt-16 text-center sm:pt-24">
-          <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 dark:text-rose-400">
-            {home.heroKicker}
-          </p>
-          <h1 className="mx-auto mt-4 max-w-2xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            {home.heroTitle}
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-            {home.heroSub}
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <Link href="/sign-up" className={primaryBtn}>
+        {/* The banner carries its own logo bottom-left content — the
+            overlay adds only navigation (top-right) and CTAs (bottom-right). */}
+        <header className="absolute inset-x-0 top-0 z-20">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-end px-6 py-5">
+            <nav className="flex items-center gap-4 text-sm">
+              <LanguageSwitcher variant="onDark" />
+              <Link href="/sign-in" className="text-white hover:underline">
+                {home.navSignIn}
+              </Link>
+              <Link
+                href="/sign-up"
+                className="rounded-md bg-white px-3 py-1.5 font-medium text-black hover:bg-white/90"
+              >
+                {home.navCreateProfile}
+              </Link>
+            </nav>
+          </div>
+        </header>
+
+        <div className="absolute inset-x-0 bottom-0 z-10 pb-8">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-3 px-6 sm:justify-end">
+            <Link
+              href="/sign-up"
+              className="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 text-sm font-semibold text-black shadow-lg hover:bg-white/90"
+            >
               {home.ctaPrimary}
             </Link>
-            <Link href="/sign-in" className={secondaryBtn}>
+            <Link
+              href="/sign-in"
+              className="inline-flex items-center justify-center rounded-md border border-white/60 bg-black/30 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm hover:bg-black/50"
+            >
               {home.ctaSecondary}
             </Link>
           </div>
+        </div>
+      </section>
 
-          {/* Hero visual — swap public/hero.webp to change it. */}
-          <div className="mt-12 overflow-hidden rounded-2xl border border-black/10 shadow-xl dark:border-white/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/hero.webp"
-              alt="DateMatch"
-              className="h-auto w-full"
-              width={1672}
-              height={941}
-              fetchPriority="high"
-            />
-          </div>
+      <main className="flex-1">
+        {/* Positioning statement */}
+        <section className="mx-auto max-w-5xl px-6 py-16 text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 dark:text-rose-400">
+            {home.heroKicker}
+          </p>
+          <h1 className="mx-auto mt-4 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+            {home.heroTitle}
+          </h1>
         </section>
 
         {/* How it works */}

@@ -7,7 +7,14 @@ import type { Locale } from "@/lib/i18n/dictionaries";
 import { useDict } from "./locale-provider";
 import { cn } from "./ui";
 
-export function LanguageSwitcher({ className }: { className?: string }) {
+export function LanguageSwitcher({
+  className,
+  variant = "default",
+}: {
+  className?: string;
+  /** "onDark" renders fixed light colors for use over dark imagery. */
+  variant?: "default" | "onDark";
+}) {
   const { locale } = useDict();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -28,8 +35,12 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       className={cn(
         "rounded px-1.5 py-0.5 text-xs",
         locale === l
-          ? "bg-foreground font-semibold text-background"
-          : "text-muted-foreground hover:underline",
+          ? variant === "onDark"
+            ? "bg-white font-semibold text-black"
+            : "bg-foreground font-semibold text-background"
+          : variant === "onDark"
+            ? "text-white/70 hover:underline"
+            : "text-muted-foreground hover:underline",
       )}
       aria-pressed={locale === l}
     >
