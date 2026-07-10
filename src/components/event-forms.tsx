@@ -7,6 +7,7 @@ import {
   addBooking,
   createEvent,
   loadDemoEvents,
+  loadYearPlan,
   updateEvent,
   type ActionResult,
 } from "@/lib/events/actions";
@@ -138,13 +139,22 @@ export function AddBookingForm({
 
 export function LoadDemoEventsForm() {
   const { t } = useDict();
-  const [state, formAction, pending] = useActionState(loadDemoEvents, null);
+  const [demoState, demoAction, demoPending] = useActionState(loadDemoEvents, null);
+  const [yearState, yearAction, yearPending] = useActionState(loadYearPlan, null);
   return (
-    <form action={formAction} className="flex flex-wrap items-center gap-3">
-      <button type="submit" disabled={pending} className={ui.btnSecondary}>
-        {pending ? t.staff.loadingDemoEvents : t.staff.loadDemoEvents}
-      </button>
-      <Status state={state} />
-    </form>
+    <div className="flex flex-wrap items-center gap-3">
+      <form action={yearAction} className="flex items-center gap-3">
+        <button type="submit" disabled={yearPending} className={ui.btnPrimary}>
+          {yearPending ? t.staff.loadingYearPlan : t.staff.loadYearPlan}
+        </button>
+        <Status state={yearState} />
+      </form>
+      <form action={demoAction} className="flex items-center gap-3">
+        <button type="submit" disabled={demoPending} className={ui.btnSecondary}>
+          {demoPending ? t.staff.loadingDemoEvents : t.staff.loadDemoEvents}
+        </button>
+        <Status state={demoState} />
+      </form>
+    </div>
   );
 }

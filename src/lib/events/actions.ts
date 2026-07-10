@@ -8,7 +8,7 @@ import { db, schema } from "@/db";
 import { requireStaffAction } from "@/lib/auth";
 import { getI18n } from "@/lib/i18n";
 import { fill, type Dict } from "@/lib/i18n/dictionaries";
-import { DEMO_EVENTS } from "./demo-events";
+import { DEMO_EVENTS, generateYearPlan } from "./demo-events";
 
 export interface ActionResult {
   ok: boolean;
@@ -208,4 +208,51 @@ export async function loadDemoEvents(
 
   revalidateEvents();
   return { ok: true, info: fill(t.staff.demoEventsLoaded, { n: DEMO_EVENTS.length }) };
+}
+
+/**
+ * Fill a full year — one event per weekend for the next 52 weeks. Appends
+ * only the weekends that don't already have an event, so it's safe to run
+ * on a non-empty list (e.g. after loading the 10 demo events).
+ */
+export async function loadYearPlan(
+  _prev: ActionResult | null,
+  _formData: FormData,
+): Promise<ActionResult> {
+  await requireStaffAction({ write: true });
+  const { t } = await getI18n();
+
+  const plan = generateYearPlan(new Date());
+
+  // Skip weekends that already hold an event (same calendar day).
+  const existing = await db()
+    .select({ startsAt: schema.events.startsAt })
+    .from(schema.events);
+  const takenDays = new Set(
+    existing.map((e) => e.startsAt.toISOString().slice(0, 10)),
+  );
+  const toInsert = plan.filter(
+    (e) => !takenDays.has(e.startsAt.toISOString().slice(0, 10)),
+  );
+
+  if (toInsert.length === 0) {
+    return { ok: false, error: t.staff.yearPlanFull };
+  }
+
+  await db().insert(schema.events).values(
+    toInsert.map((e) => ({
+      title: e.title,
+      description: e.description,
+      location: e.location,
+      country: e.country,
+      emoji: e.emoji,
+      startsAt: e.startsAt,
+      priceEur: e.priceEur,
+      capacity: e.capacity,
+      published: true,
+    })),
+  );
+
+  revalidateEvents();
+  return { ok: true, info: fill(t.staff.yearPlanLoaded, { n: toInsert.length }) };
 }

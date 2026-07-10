@@ -64,7 +64,7 @@ export default async function EventsPage() {
         </table>
       </div>
 
-      {writable && events.length === 0 && <LoadDemoEventsForm />}
+      {writable && <LoadDemoEventsForm />}
 
       {writable && (
         <Card title={t.staff.newEvent}>
