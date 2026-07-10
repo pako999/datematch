@@ -61,7 +61,7 @@ Portal clients are Clerk users too, linked by `clients.clerk_user_id`; they only
 
 Missing data (no embedding yet, no coordinates) **drops the component and renormalizes** the rest — incomplete data lowers confidence, not the ceiling. Full per-component breakdown is stored on `match_scores.breakdown`; pairs are canonical (`clientAId < clientBId`).
 
-**Human-matchmaker touches:** scores are presented as tiers (Strong ≥75 / Promising ≥55 / Stretch) rather than decimals; the shortlist always includes one **wildcard** (high bio resonance outside the top ranks — stated preferences aren't revealed preferences); a heavily-weighted `timeline` ("readiness to settle down") question captures life-stage fit; and the AI rationale is prompted to end with the risk flag a human matchmaker would raise ("Watch: …"). Rationales are cached on the score row and invalidated on every recompute; they never invent facts beyond the two profiles and the breakdown.
+**Human-matchmaker touches:** scores are presented as tiers (Strong ≥75 / Promising ≥55 / Stretch) rather than decimals; the shortlist adds one **wildcard** whenever a pair outside the top ranks shows high bio resonance (semantic ≥ 0.6 — requires embeddings, i.e. `VOYAGE_API_KEY`); a heavily-weighted `timeline` ("readiness to settle down") question captures life-stage fit; and the AI rationale (written in Slovenian) is prompted to end with the risk flag a human matchmaker would raise ("Pozor: …"). Rationales are cached on the score row and invalidated on every recompute; they are instructed to never invent facts beyond the two profiles and the breakdown.
 
 ## How the intro pipeline works
 
