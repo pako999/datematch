@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   addStaffMember,
+  backfillEmbeddings,
   loadDemoData,
   type ActionResult,
 } from "@/lib/staff/staff-actions";
@@ -21,6 +22,26 @@ export function LoadDemoDataForm() {
         (state.ok ? (
           <span className="text-sm text-emerald-600 dark:text-emerald-400">
             {t.staff.demoLoaded}
+          </span>
+        ) : (
+          <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
+        ))}
+    </form>
+  );
+}
+
+export function BackfillEmbeddingsForm() {
+  const { t } = useDict();
+  const [state, formAction, pending] = useActionState(backfillEmbeddings, null);
+  return (
+    <form action={formAction} className="flex flex-wrap items-center gap-3">
+      <button type="submit" disabled={pending} className={ui.btnPrimary}>
+        {pending ? t.staff.backfillingEmbeddings : t.staff.backfillEmbeddings}
+      </button>
+      {state &&
+        (state.ok ? (
+          <span className="text-sm text-emerald-600 dark:text-emerald-400">
+            {state.info}
           </span>
         ) : (
           <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>

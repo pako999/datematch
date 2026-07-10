@@ -365,6 +365,13 @@ const sl = {
     account: "Račun",
     accountText:
       "Prijavljeni kot {email} ({role}). Geslo, seje in dvostopenjsko preverjanje urejate prek menija avatarja v stranski vrstici.",
+    embeddingsCard: "Semantično ujemanje (vdelave opisov)",
+    embeddingsText:
+      "Opisi strank, napisani pred vklopom semantičnega ujemanja, še nimajo vdelav. Ta gumb jih ustvari za vse obstoječe opise in preračuna ujemanja.",
+    backfillEmbeddings: "Ustvari vdelave za obstoječe opise",
+    backfillingEmbeddings: "Ustvarjam vdelave …",
+    embeddingsDone: "Vdelave ustvarjene za {n} strank; ujemanja preračunana.",
+    embeddingsNone: "Vsi opisi že imajo vdelave — nič za narediti.",
   },
   staffErrors: {
     checkForm: "Preverite obrazec",
@@ -386,6 +393,8 @@ const sl = {
     rosterNotEmpty:
       "Seznam ni prazen — demo podatki se naložijo samo v prazno bazo.",
     emailAlreadyStaff: "Ta e-pošta je že med zaposlenimi",
+    embeddingsNotConfigured:
+      "VOYAGE_API_KEY ni nastavljen — semantično ujemanje ni vklopljeno.",
   },
   attributes: {
     heightCm: "Višina (cm)",
@@ -889,6 +898,13 @@ const en: Dict = {
     account: "Account",
     accountText:
       "Signed in as {email} ({role}). Manage your password, sessions, and two-factor auth from the avatar menu in the sidebar.",
+    embeddingsCard: "Semantic matching (bio embeddings)",
+    embeddingsText:
+      "Client bios written before semantic matching was enabled don't have embeddings yet. This button creates them for all existing bios and recomputes matches.",
+    backfillEmbeddings: "Generate embeddings for existing bios",
+    backfillingEmbeddings: "Generating embeddings…",
+    embeddingsDone: "Embeddings created for {n} clients; matches recomputed.",
+    embeddingsNone: "All bios already have embeddings — nothing to do.",
   },
   staffErrors: {
     checkForm: "Check the form",
@@ -910,6 +926,8 @@ const en: Dict = {
     rosterNotEmpty:
       "The roster isn't empty — demo data only loads into an empty database.",
     emailAlreadyStaff: "That email is already staff",
+    embeddingsNotConfigured:
+      "VOYAGE_API_KEY is not set — semantic matching isn't enabled.",
   },
   attributes: {
     heightCm: "Height (cm)",

@@ -7,10 +7,15 @@ import { db, schema } from "@/db";
 import { PENDING_STAFF_PREFIX, requireStaffAction } from "@/lib/auth";
 import { runSeed } from "@/lib/seed-data";
 import { getI18n } from "@/lib/i18n";
+import { fill } from "@/lib/i18n/dictionaries";
+import { embedText } from "@/lib/embeddings";
+import { recomputeScoresForClient } from "@/lib/matching/candidates";
+import { and, isNull, ne } from "drizzle-orm";
 
 export interface ActionResult {
   ok: boolean;
   error?: string;
+  info?: string;
 }
 
 const addSchema = z.object({
@@ -95,6 +100,58 @@ export async function loadDemoData(
     `Demo data loaded: ${summary.clients} clients, ${summary.scores} scores, ${summary.intros} intros`,
   );
   return { ok: true };
+}
+
+/**
+ * One-click backfill after VOYAGE_API_KEY is added: embed every bio that
+ * predates embeddings, then recompute scores for the affected clients.
+ */
+export async function backfillEmbeddings(
+  _prev: ActionResult | null,
+  _formData: FormData,
+): Promise<ActionResult> {
+  await requireStaffAction({ admin: true });
+  const { t } = await getI18n();
+
+  if (!process.env.VOYAGE_API_KEY) {
+    return { ok: false, error: t.staffErrors.embeddingsNotConfigured };
+  }
+
+  const missing = await db()
+    .select({ id: schema.clients.id, bio: schema.clients.bio })
+    .from(schema.clients)
+    .where(and(isNull(schema.clients.embedding), ne(schema.clients.bio, "")))
+    .limit(100);
+
+  if (missing.length === 0) {
+    return { ok: true, info: t.staff.embeddingsNone };
+  }
+
+  let embedded = 0;
+  for (const c of missing) {
+    try {
+      const embedding = await embedText(c.bio);
+      if (!embedding) continue;
+      await db()
+        .update(schema.clients)
+        .set({ embedding })
+        .where(eq(schema.clients.id, c.id));
+      embedded++;
+    } catch (err) {
+      console.warn(`embedding backfill failed for ${c.id}:`, err);
+    }
+  }
+  for (const c of missing) {
+    try {
+      await recomputeScoresForClient(c.id);
+    } catch (err) {
+      console.warn(`recompute failed for ${c.id}:`, err);
+    }
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/clients");
+  return { ok: true, info: fill(t.staff.embeddingsDone, { n: embedded }) };
 }
 
 export async function removeStaffMember(staffId: string): Promise<void> {

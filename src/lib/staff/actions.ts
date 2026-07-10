@@ -427,8 +427,11 @@ export async function deleteClientPhoto(
 /* ------------------------------------------------------------------ */
 
 export async function recomputeClientScores(clientId: string): Promise<void> {
-  await requireManagedClient(clientId, { write: true });
-  await recomputeScoresForClient(clientId);
+  const { client } = await requireManagedClient(clientId, { write: true });
+  // Self-heal: if the bio was written before embeddings were configured,
+  // generate the missing embedding as part of the recompute.
+  const needsEmbedding = client.embedding === null && client.bio.trim() !== "";
+  await afterClientChange(clientId, { bioChanged: needsEmbedding });
   revalidatePath(`/clients/${clientId}`);
 }
 

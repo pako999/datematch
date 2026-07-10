@@ -3,7 +3,11 @@ import { db, schema } from "@/db";
 import { requireStaffPage, PENDING_STAFF_PREFIX } from "@/lib/auth";
 import { listStaff } from "@/lib/staff/clients";
 import { removeStaffMember, updateStaffRole } from "@/lib/staff/staff-actions";
-import { AddStaffForm, LoadDemoDataForm } from "@/components/settings-forms";
+import {
+  AddStaffForm,
+  BackfillEmbeddingsForm,
+  LoadDemoDataForm,
+} from "@/components/settings-forms";
 import { Card, ui } from "@/components/ui";
 import { COMPONENT_WEIGHTS, QUESTION_RULES } from "@/lib/matching/questions";
 import { getI18n } from "@/lib/i18n";
@@ -126,6 +130,13 @@ export default async function SettingsPage() {
           </table>
         </div>
       </Card>
+
+      {isAdmin && (
+        <Card title={t.staff.embeddingsCard}>
+          <p className="mb-3 text-sm text-muted-foreground">{t.staff.embeddingsText}</p>
+          <BackfillEmbeddingsForm />
+        </Card>
+      )}
 
       {isAdmin && clientCount === 0 && (
         <Card title={t.staff.demoData}>
