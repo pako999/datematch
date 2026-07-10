@@ -25,6 +25,7 @@ export default async function StaffLayout({
     { href: "/dashboard", label: t.staff.navDashboard },
     { href: "/clients", label: t.staff.navClients },
     { href: "/introductions", label: t.staff.navIntroductions },
+    { href: "/events", label: t.staff.navEvents },
     { href: "/feedback", label: t.staff.navFeedback },
     { href: "/settings", label: t.staff.navSettings },
   ];

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SiteFooter, CONTACT_EMAIL } from "@/components/site-footer";
+import { EventCards } from "@/components/event-cards";
+import { listUpcomingEvents } from "@/lib/events/queries";
 import { getI18n } from "@/lib/i18n";
 import { fill } from "@/lib/i18n/dictionaries";
 
@@ -19,9 +21,10 @@ const primaryBtn =
   "inline-flex items-center justify-center rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:opacity-90";
 
 export default async function Home() {
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
   const missing = missingEnv();
   const home = t.home;
+  const upcomingEvents = await listUpcomingEvents(6);
 
   const steps = [
     { n: "1", title: home.step1Title, text: home.step1Text },
@@ -160,6 +163,28 @@ export default async function Home() {
             ))}
           </div>
         </section>
+
+        {/* Singles events */}
+        {upcomingEvents.length > 0 && (
+          <section className="border-t border-black/5 bg-black/[.02] py-16 dark:border-white/10 dark:bg-white/[.03]">
+            <div className="mx-auto max-w-5xl px-6">
+              <h2 className="text-center text-2xl font-semibold tracking-tight">
+                {home.eventsTitle}
+              </h2>
+              <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed text-muted-foreground">
+                {home.eventsSub}
+              </p>
+              <div className="mt-10">
+                <EventCards events={upcomingEvents} t={t} locale={locale} />
+              </div>
+              <p className="mt-8 text-center">
+                <Link href="/dogodki" className="text-sm font-medium underline">
+                  {home.eventsAll} →
+                </Link>
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Privacy strip */}
         <section className="border-y border-black/5 bg-black/[.02] py-8 dark:border-white/10 dark:bg-white/[.03]">

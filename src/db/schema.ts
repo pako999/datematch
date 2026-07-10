@@ -390,6 +390,59 @@ export const matchExclusions = pgTable(
 );
 
 /* ------------------------------------------------------------------ */
+/* Singles events (marketing — shown on the public homepage)           */
+/* ------------------------------------------------------------------ */
+
+export const events = pgTable(
+  "events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    /** Human location, e.g. "Pohorje, Slovenija" or "Hvar, Hrvaška". */
+    location: text("location").notNull(),
+    country: text("country").notNull().default("Slovenija"),
+    /** Card icon shown on the homepage. */
+    emoji: text("emoji"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    priceEur: numeric("price_eur", { precision: 8, scale: 2, mode: "number" }),
+    capacity: integer("capacity"),
+    published: boolean("published").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("events_published_starts_idx").on(t.published, t.startsAt)],
+);
+
+export const eventBookings = pgTable(
+  "event_bookings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    bookedByStaffId: text("booked_by_staff_id")
+      .notNull()
+      .references(() => staff.id, { onUpdate: "cascade" }),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("event_bookings_event_client_uq").on(t.eventId, t.clientId),
+    index("event_bookings_client_idx").on(t.clientId),
+  ],
+);
+
+export type EventRow = typeof events.$inferSelect;
+export type EventBooking = typeof eventBookings.$inferSelect;
+
+/* ------------------------------------------------------------------ */
 /* Row types                                                           */
 /* ------------------------------------------------------------------ */
 

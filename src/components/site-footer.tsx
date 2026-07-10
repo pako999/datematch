@@ -27,6 +27,7 @@ export async function SiteFooter() {
         <div className={col}>
           <p className={head}>{home.footerPages}</p>
           <p><Link href="/" className={link}>{home.footerHome}</Link></p>
+          <p><Link href="/dogodki" className={link}>{home.footerEvents}</Link></p>
           <p><Link href="/faq" className={link}>{home.footerFaq}</Link></p>
           <p><Link href="/sign-up" className={link}>{home.navCreateProfile}</Link></p>
           <p><Link href="/portal" className={link}>{home.footerMyProfile}</Link></p>
