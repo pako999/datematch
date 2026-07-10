@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { listUpcomingEvents } from "@/lib/events/queries";
+import { listUpcomingEventsOrSamples } from "@/lib/events/queries";
 import { EventCards } from "@/components/event-cards";
 import { getI18n } from "@/lib/i18n";
 import { CONTACT_EMAIL } from "@/components/site-footer";
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 export default async function EventsPublicPage() {
   const { t, locale } = await getI18n();
-  const events = await listUpcomingEvents(120);
+  const events = await listUpcomingEventsOrSamples(120);
 
   // Group by "YYYY-MM" so a full year reads as a calendar.
   const groups = new Map<string, EventRow[]>();

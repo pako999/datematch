@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { generateYearPlan } from "./demo-events";
 
 /** Upcoming published events for the public homepage / dogodki page. */
 export async function listUpcomingEvents(limit = 20): Promise<schema.EventRow[]> {
@@ -20,6 +21,37 @@ export async function listUpcomingEvents(limit = 20): Promise<schema.EventRow[]>
     // Public pages must render even when the DB isn't configured yet.
     return [];
   }
+}
+
+/**
+ * Same as listUpcomingEvents, but when no events are stored yet (fresh
+ * deploy, before an admin loads the plan) it falls back to generated
+ * sample events so the public site never shows an empty section. Samples
+ * are display-only — not persisted, not bookable — and get `id`s prefixed
+ * with "sample-".
+ */
+export async function listUpcomingEventsOrSamples(
+  limit = 20,
+): Promise<schema.EventRow[]> {
+  const real = await listUpcomingEvents(limit);
+  if (real.length > 0) return real;
+
+  const now = new Date();
+  return generateYearPlan(now)
+    .slice(0, limit)
+    .map((e, i) => ({
+      id: `sample-${i}`,
+      title: e.title,
+      description: e.description,
+      location: e.location,
+      country: e.country,
+      emoji: e.emoji,
+      startsAt: e.startsAt,
+      priceEur: e.priceEur,
+      capacity: e.capacity,
+      published: true,
+      createdAt: now,
+    }));
 }
 
 export interface EventWithCount extends schema.EventRow {

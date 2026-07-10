@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { SiteFooter, CONTACT_EMAIL } from "@/components/site-footer";
 import { EventCards } from "@/components/event-cards";
-import { listUpcomingEvents } from "@/lib/events/queries";
+import { listUpcomingEventsOrSamples } from "@/lib/events/queries";
 import { getI18n } from "@/lib/i18n";
 import { fill } from "@/lib/i18n/dictionaries";
 
@@ -24,7 +24,7 @@ export default async function Home() {
   const { t, locale } = await getI18n();
   const missing = missingEnv();
   const home = t.home;
-  const upcomingEvents = await listUpcomingEvents(6);
+  const upcomingEvents = await listUpcomingEventsOrSamples(6);
 
   const steps = [
     { n: "1", title: home.step1Title, text: home.step1Text },
