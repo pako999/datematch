@@ -76,6 +76,19 @@ export default async function Home() {
               {home.ctaSecondary}
             </Link>
           </div>
+
+          {/* Hero visual — swap public/hero.png to change it. */}
+          <div className="mt-12 overflow-hidden rounded-2xl border border-black/10 shadow-xl dark:border-white/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/hero.png"
+              alt="DateMatch"
+              className="h-auto w-full"
+              width={1600}
+              height={900}
+              fetchPriority="high"
+            />
+          </div>
         </section>
 
         {/* How it works */}
