@@ -77,15 +77,15 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* Hero visual — swap public/hero.png to change it. */}
+          {/* Hero visual — swap public/hero.webp to change it. */}
           <div className="mt-12 overflow-hidden rounded-2xl border border-black/10 shadow-xl dark:border-white/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/hero.png"
+              src="/hero.webp"
               alt="DateMatch"
               className="h-auto w-full"
-              width={1600}
-              height={900}
+              width={1672}
+              height={941}
               fetchPriority="high"
             />
           </div>
