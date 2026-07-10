@@ -35,6 +35,7 @@ import { QUESTION_RULES } from "@/lib/matching/questions";
 import { ageOn } from "@/lib/matching/score";
 import { getI18n } from "@/lib/i18n";
 import { fill, questionLabel } from "@/lib/i18n/dictionaries";
+import { formatAttributes } from "@/lib/attributes";
 
 export default async function ClientDetailPage({
   params,
@@ -75,6 +76,11 @@ export default async function ClientDetailPage({
             {assignedStaff?.name ?? t.common.unassigned}
             {client.clerkUserId ? ` · ${t.staff.selfRegistered}` : ""}
           </p>
+          {formatAttributes(client, t) && (
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {formatAttributes(client, t)}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           {writable && (

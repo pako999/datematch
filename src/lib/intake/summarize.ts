@@ -51,6 +51,17 @@ export async function generateIntakeSummary(
 CLIENT
 Name: ${client.fullName}
 Age: ${ageOn(client.birthdate, new Date())}, Gender: ${client.gender}, City: ${client.city}
+Attributes: ${[
+    client.heightCm ? `height ${client.heightCm} cm` : null,
+    client.weightKg ? `weight ${client.weightKg} kg` : null,
+    client.eyeColor ? `eyes ${client.eyeColor}` : null,
+    client.hairColor ? `hair ${client.hairColor}` : null,
+    client.bodyType ? `body type ${client.bodyType}` : null,
+    client.education ? `education ${client.education}` : null,
+    client.occupation ? `occupation ${client.occupation}` : null,
+  ]
+    .filter(Boolean)
+    .join(", ") || "(not provided)"}
 Status: ${client.status}, Tier: ${client.membershipTier}
 Bio (their own words): ${client.bio || "(none)"}
 

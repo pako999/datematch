@@ -22,6 +22,19 @@ function describeIntake(intake: Record<string, unknown>): string {
   return lines.length > 0 ? lines.join("\n") : "- (questionnaire not completed)";
 }
 
+function attributeLine(client: schema.Client): string {
+  const parts = [
+    client.heightCm ? `height ${client.heightCm} cm` : null,
+    client.weightKg ? `weight ${client.weightKg} kg` : null,
+    client.eyeColor ? `eyes ${client.eyeColor}` : null,
+    client.hairColor ? `hair ${client.hairColor}` : null,
+    client.bodyType ? `body type ${client.bodyType}` : null,
+    client.education ? `education ${client.education}` : null,
+    client.occupation ? `occupation ${client.occupation}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : "(not provided)";
+}
+
 function profileBlock(
   client: schema.Client,
   intake: Record<string, unknown>,
@@ -29,6 +42,7 @@ function profileBlock(
   return [
     `Name: ${client.fullName}`,
     `Age: ${ageOn(client.birthdate, new Date())}, City: ${client.city}`,
+    `Attributes: ${attributeLine(client)}`,
     `Bio: ${client.bio || "(none)"}`,
     `Questionnaire:\n${describeIntake(intake)}`,
   ].join("\n");

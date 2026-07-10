@@ -16,6 +16,10 @@ import {
   questionLabel,
   questionOption,
 } from "@/lib/i18n/dictionaries";
+import {
+  AttributeFields,
+  type AttributeInitial,
+} from "@/components/attribute-fields";
 
 const inputCls =
   "w-full rounded-md border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50";
@@ -67,6 +71,7 @@ export interface BasicsInitial {
   city: string;
   country: string;
   bio: string;
+  attributes: AttributeInitial;
 }
 
 export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
@@ -161,6 +166,17 @@ export function BasicsForm({ initial }: { initial: BasicsInitial | null }) {
             defaultValue={initial?.country ?? "Slovenija"}
             className={inputCls}
             autoComplete="country-name"
+          />
+        </div>
+      </div>
+      <div className="space-y-1.5 border-t border-black/10 pt-4 dark:border-white/15">
+        <span className={labelCls}>{t.attributes.sectionTitle}</span>
+        <p className="text-xs text-muted-foreground">{t.attributes.sectionDesc}</p>
+        <div className="pt-2">
+          <AttributeFields
+            initial={initial?.attributes ?? null}
+            inputCls={inputCls}
+            labelCls={labelCls}
           />
         </div>
       </div>

@@ -18,6 +18,7 @@ import { ageOn } from "@/lib/matching/score";
 import type { Client } from "@/db/schema";
 import { getI18n } from "@/lib/i18n";
 import { fill, questionLabel, type Dict } from "@/lib/i18n/dictionaries";
+import { formatAttributes } from "@/lib/attributes";
 
 function toLocalInputValue(d: Date | null): string | null {
   if (!d) return null;
@@ -42,6 +43,11 @@ function ProfileCard({
         {ageOn(client.birthdate, new Date())} · {t.genders[client.gender]} ·{" "}
         {client.city} · {client.membershipTier}
       </p>
+      {formatAttributes(client, t) && (
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {formatAttributes(client, t)}
+        </p>
+      )}
       <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-sm leading-relaxed">
         {client.bio || t.staff.noBio}
       </p>

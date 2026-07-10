@@ -56,6 +56,15 @@ export default async function ProfilePage() {
         city: client.city,
         country: client.country,
         bio: client.bio,
+        attributes: {
+          heightCm: client.heightCm,
+          weightKg: client.weightKg,
+          eyeColor: client.eyeColor,
+          hairColor: client.hairColor,
+          bodyType: client.bodyType,
+          education: client.education,
+          occupation: client.occupation,
+        },
       }
     : null;
 

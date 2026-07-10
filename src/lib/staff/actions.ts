@@ -16,6 +16,7 @@ import { recomputeScoresForClient } from "@/lib/matching/candidates";
 import { sendClientDeleted } from "@/inngest/client";
 import { deletePhotoBlob, uploadPhotoBlob } from "@/lib/storage";
 import { geocodeCity } from "@/lib/geocode";
+import { parseAttributes } from "@/lib/attributes";
 import { getI18n } from "@/lib/i18n";
 import { fill, questionLabel, type Dict } from "@/lib/i18n/dictionaries";
 
@@ -86,11 +87,14 @@ export async function createClient(
   if (ageOn(birthdate, new Date()) < 18) {
     return fail(t.staffErrors.tooYoung);
   }
+  const attrs = parseAttributes(formData);
+  if (!attrs.ok) return fail(t.staffErrors.checkForm);
 
   const coords = await geocodeCity(parsed.data.city, parsed.data.country);
   const [row] = await db()
     .insert(schema.clients)
     .values({
+      ...attrs.data,
       ...parsed.data,
       phone: parsed.data.phone || null,
       birthdate,
@@ -123,6 +127,9 @@ export async function updateClientBasics(
     return fail(t.staffErrors.tooYoung);
   }
 
+  const attrs = parseAttributes(formData);
+  if (!attrs.ok) return fail(t.staffErrors.checkForm);
+
   const bioChanged = client.bio !== parsed.data.bio;
   const locationChanged =
     client.city !== parsed.data.city || client.country !== parsed.data.country;
@@ -132,6 +139,7 @@ export async function updateClientBasics(
   await db()
     .update(schema.clients)
     .set({
+      ...attrs.data,
       ...parsed.data,
       phone: parsed.data.phone || null,
       birthdate,

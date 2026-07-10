@@ -103,6 +103,15 @@ export const clients = pgTable(
     // Derived from city+country via best-effort geocoding; never staff-entered.
     lat: numeric("lat", { precision: 9, scale: 6, mode: "number" }),
     lng: numeric("lng", { precision: 9, scale: 6, mode: "number" }),
+    /* Physical & personal attributes (all optional; values are stable
+     * keys — e.g. eyeColor "brown" — translated at display time). */
+    heightCm: integer("height_cm"),
+    weightKg: integer("weight_kg"),
+    eyeColor: text("eye_color"),
+    hairColor: text("hair_color"),
+    bodyType: text("body_type"),
+    education: text("education"),
+    occupation: text("occupation"),
     status: clientStatusEnum("status").notNull().default("lead"),
     membershipTier: membershipTierEnum("membership_tier")
       .notNull()

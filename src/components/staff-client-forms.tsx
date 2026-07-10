@@ -10,6 +10,10 @@ import {
   questionLabel,
   questionOption,
 } from "@/lib/i18n/dictionaries";
+import {
+  AttributeFields,
+  type AttributeInitial,
+} from "@/components/attribute-fields";
 
 type BoundAction = (
   prev: ActionResult | null,
@@ -51,6 +55,7 @@ export interface StaffBasicsInitial {
   city: string;
   country: string;
   bio: string;
+  attributes: AttributeInitial;
 }
 
 export function StaffBasicsForm({
@@ -100,6 +105,16 @@ export function StaffBasicsForm({
         <div>
           <label className={ui.label} htmlFor="country">{t.common.country}</label>
           <input id="country" name="country" required defaultValue={initial?.country ?? "Slovenija"} className={ui.input} />
+        </div>
+      </div>
+      <div className="border-t border-black/10 pt-4 dark:border-white/15">
+        <span className={ui.label}>{t.attributes.sectionTitle}</span>
+        <div className="pt-2">
+          <AttributeFields
+            initial={initial?.attributes ?? null}
+            inputCls={ui.input}
+            labelCls={ui.label}
+          />
         </div>
       </div>
       <div>

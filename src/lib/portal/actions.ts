@@ -11,6 +11,7 @@ import { afterClientChange } from "@/lib/matching/refresh";
 import { capture } from "@/lib/analytics";
 import { deletePhotoBlob, uploadPhotoBlob } from "@/lib/storage";
 import { geocodeCity } from "@/lib/geocode";
+import { parseAttributes } from "@/lib/attributes";
 import { getI18n } from "@/lib/i18n";
 import { fill, questionLabel, type Dict } from "@/lib/i18n/dictionaries";
 
@@ -93,8 +94,14 @@ export async function saveBasics(
     return { ok: false, error: t.portalErrors.checkBirthdate };
   }
 
+  const attrs = parseAttributes(formData);
+  if (!attrs.ok) {
+    return { ok: false, error: t.portalErrors.checkForm };
+  }
+
   const coords = await geocodeCity(parsed.data.city, parsed.data.country);
   const values = {
+    ...attrs.data,
     fullName: parsed.data.fullName,
     email,
     phone: parsed.data.phone || null,

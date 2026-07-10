@@ -69,6 +69,15 @@ interface Persona {
   consentToIntroduce: boolean;
   bio: string;
   assignedTo: number; // index into SEED_STAFF
+  attrs?: {
+    heightCm?: number;
+    weightKg?: number;
+    eyeColor?: string;
+    hairColor?: string;
+    bodyType?: string;
+    education?: string;
+    occupation?: string;
+  };
   prefs: {
     interestedInGenders: schema.Gender[];
     minAge: number;
@@ -92,6 +101,15 @@ const PERSONAS: Persona[] = [
     consentToIntroduce: true,
     bio: "Architect who spends weekends hiking the Julian Alps or trying a new recipe. Values honesty, curiosity, and a partner who wants a family. Slightly introverted but warm once comfortable.",
     assignedTo: 1,
+    attrs: {
+      heightCm: 168,
+      weightKg: 58,
+      eyeColor: "green",
+      hairColor: "brown",
+      bodyType: "slim",
+      education: "master",
+      occupation: "Arhitektka",
+    },
     prefs: {
       interestedInGenders: ["man"],
       minAge: 30,
@@ -129,6 +147,15 @@ const PERSONAS: Persona[] = [
     consentToIntroduce: true,
     bio: "Software engineering lead, amateur mountaineer and enthusiastic home cook. Looking for a long-term partner to build a family with. Talks less, listens more; loves planning trips months ahead.",
     assignedTo: 1,
+    attrs: {
+      heightCm: 184,
+      weightKg: 82,
+      eyeColor: "blue",
+      hairColor: "black",
+      bodyType: "athletic",
+      education: "master",
+      occupation: "Vodja razvoja programske opreme",
+    },
     prefs: {
       interestedInGenders: ["woman"],
       minAge: 28,
@@ -244,6 +271,15 @@ const PERSONAS: Persona[] = [
     consentToIntroduce: true,
     bio: "Physician, marathon runner, early riser. Direct communicator who values ambition and order. Not interested in relocating away from Štajerska.",
     assignedTo: 1,
+    attrs: {
+      heightCm: 172,
+      weightKg: 60,
+      eyeColor: "brown",
+      hairColor: "blonde",
+      bodyType: "athletic",
+      education: "phd",
+      occupation: "Zdravnica",
+    },
     prefs: {
       interestedInGenders: ["man"],
       minAge: 35,
@@ -281,6 +317,15 @@ const PERSONAS: Persona[] = [
     consentToIntroduce: true,
     bio: "Owns a small vineyard and a logistics business. Structured, driven, child-free by choice. Runs half-marathons and hosts long Sunday lunches.",
     assignedTo: 1,
+    attrs: {
+      heightCm: 180,
+      weightKg: 85,
+      eyeColor: "gray",
+      hairColor: "gray",
+      bodyType: "average",
+      education: "bachelor",
+      occupation: "Podjetnik",
+    },
     prefs: {
       interestedInGenders: ["woman"],
       minAge: 34,
@@ -529,6 +574,7 @@ export async function runSeed(db: DB, opts: { wipe: boolean }): Promise<SeedSumm
         country: "Slovenija",
         lat: p.location.lat,
         lng: p.location.lng,
+        ...p.attrs,
         status: p.status,
         membershipTier: p.membershipTier,
         assignedStaffId: SEED_STAFF[p.assignedTo]!.id,
