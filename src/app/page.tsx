@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { SiteFooter, CONTACT_EMAIL } from "@/components/site-footer";
 import { getI18n } from "@/lib/i18n";
 import { fill } from "@/lib/i18n/dictionaries";
 
@@ -33,8 +34,23 @@ export default async function Home() {
     { title: home.why3Title, text: home.why3Text, icon: "🧭" },
   ];
 
+  const orgJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    name: "DateMatch",
+    description: home.heroSub,
+    email: CONTACT_EMAIL,
+    areaServed: "SI",
+    url: process.env.NEXT_PUBLIC_APP_URL ?? "https://datematch-iota.vercel.app",
+    image: "/hero.webp",
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+      />
       {/* Responsive full-screen hero. The banner is never cropped:
           object-contain scales it to fit every viewport, letterboxed into
           a background matching the artwork's edges. Desktop fills the
@@ -175,20 +191,7 @@ export default async function Home() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-black/5 py-6 dark:border-white/10">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 text-xs text-muted-foreground">
-          <span>
-            © {new Date().getFullYear()} DateMatch. {home.footerRights}
-          </span>
-          <span className="flex items-center gap-4">
-            <LanguageSwitcher />
-            <Link href="/dashboard" className="hover:underline">
-              {home.footerStaff}
-            </Link>
-          </span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
